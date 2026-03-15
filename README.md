@@ -1,39 +1,60 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# Sysmon
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages). 
+Monitor de sistema em Dart com backend para coleta de metricas no Linux e um frontend Flutter Desktop planejado para visualizacao em tempo real.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages). 
--->
+## Objetivo
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+O projeto foi pensado para expor snapshots de uso de CPU, memoria, disco, rede e status de servicos via WebSocket, permitindo que um dashboard Flutter consuma os dados em tempo real.
 
-## Features
+## Status
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+O repositorio esta na fase inicial e, neste momento, a base em Dart esta sendo estruturada primeiro.
+O frontend Flutter Desktop faz parte da arquitetura planejada e sera adicionado depois no mesmo ecossistema.
 
-## Getting started
+## Configuracao
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+As configuracoes devem vir de variaveis de ambiente. Exemplo:
 
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
-
-```dart
-const like = 'sample';
+```env
+SYSMON_PORT=8080
+SYSMON_INTERVAL_MS=2000
+SYSMON_SERVICES=postgresql,redis,elasticsearch
+SYSMON_LOG_LEVEL=info
 ```
 
-## Additional information
+## Estrutura Planejada
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+```text
+┌─────────────────────────────────────────────┐
+│         Flutter Desktop (Frontend)          │
+│  Dashboard com fl_chart + riverpod          │
+└───────────────┬─────────────────────────────┘
+                │ WebSocket (JSON stream)
+                │ ws://localhost:8080/ws
+┌───────────────▼─────────────────────────────┐
+│         Dart Backend (Servidor)             │
+│                                             │
+│  ┌──────────────────────────────────────┐   │
+│  │  Collector Loop (a cada 2s)          │   │
+│  │  cpu · mem · disk · net · services   │   │
+│  └──────────────┬───────────────────────┘   │
+│                 │ Stream<MetricsSnapshot>   │
+│  ┌──────────────▼───────────────────────┐   │
+│  │  WebSocket Handler                   │   │
+│  │  Broadcast para todos os clientes    │   │
+│  └──────────────────────────────────────┘   │
+└─────────────────────────────────────────────┘
+                │ le
+┌───────────────▼─────────────────────────────┐
+│  Linux Kernel                               │
+│  /proc/stat · /proc/meminfo · /proc/net/dev │
+│  /proc/diskstats · systemctl                │
+└─────────────────────────────────────────────┘
+```
+
+## Roadmap Inicial
+
+- Estruturar o backend em Dart para leitura das fontes do Linux.
+- Gerar `MetricsSnapshot` em intervalo configuravel.
+- Expor stream via WebSocket para multiplos clientes.
+- Adicionar frontend Flutter Desktop para dashboard em tempo real.
