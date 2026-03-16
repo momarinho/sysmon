@@ -1,3 +1,7 @@
+![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart&logoColor=white)
+![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logo=flutter&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat&logo=linux&logoColor=black)
+
 # Sysmon
 
 Monitor de sistema em Dart com backend para coleta de metricas no Linux e um frontend Flutter Desktop planejado para visualizacao em tempo real.
