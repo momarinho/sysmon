@@ -1,51 +1,62 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:sysmon/src/config/config.dart';
 import 'package:sysmon/src/logging/logger.dart';
-import 'package:sysmon/src/collectors/cpu_collector.dart';
-import 'package:sysmon/src/collectors/mem_collector.dart';
+import 'package:sysmon/src/server/http_handler.dart';
+import 'package:sysmon/src/server/collector_loop.dart';
+import 'package:sysmon/src/server/websocket_handler.dart';
 
-final _log = Logger('Server');
-final _cpu = CpuCollector();
-final _mem = MemCollector();
+final _log = Logger('Main');
 
-void main() async {
-  _log.info('Starting sysmon', {
-    'port': Config.port,
-    'interval_ms': Config.intervalMs,
+Future<void> main() async {
+  final loop = CollectorLoop();
+  final ws = WebSocketHandler(latestSnapshot: () => loop.latest);
+  final handler = HttpHandler(loop, ws);
+  var shuttingDown = false;
+
+  loop.start();
+
+  ws.attach(loop.stream);
+
+  final server = await HttpServer.bind(
+    InternetAddress.loopbackIPv4,
+    Config.port,
+  );
+
+  Future<void> shutdown() async {
+    if (shuttingDown) {
+      return;
+    }
+
+    shuttingDown = true;
+    _log.info('SIGINT received, shutting down...');
+    await server.close(force: true);
+    await ws.dispose();
+    await loop.stop();
+  }
+
+  final sigintSub = ProcessSignal.sigint.watch().listen((_) {
+    unawaited(shutdown());
   });
 
-  final server = await HttpServer.bind('localhost', Config.port);
-  _log.info('Server listening', {'port': Config.port});
+  _log.info('Server started', {
+    'port': Config.port,
+    'endpoints': ['/health', '/metrics', '/metrics/prometheus', '/ws'],
+  });
 
-  await for (final req in server) {
-    await _handleRequest(req);
+  try {
+    await for (final req in server) {
+      unawaited(
+        handler.handle(req).catchError((Object error, StackTrace stackTrace) {
+          _log.error('Failed to process request', {
+            'error': error.toString(),
+          });
+        }),
+      );
+    }
+  } finally {
+    await sigintSub.cancel();
+    await shutdown();
   }
-}
-
-Future<void> _handleRequest(HttpRequest req) async {
-  req.response.headers.set('Access--Control-Allow-Origin', '*');
-  req.response.headers.contentType = ContentType.json;
-
-  switch (req.uri.path) {
-    case '/health':
-      req.response
-        ..statusCode = 200
-        ..write(jsonEncode({'status': 'ok'}));
-
-    case '/metrics':
-      final cpu = await _cpu.collect();
-      final mem = await _mem.collect();
-      req.response.write(jsonEncode({
-        'timestamp': DateTime.now().toUtc().toIso8601String(),
-        'cpu': cpu.toJson(),
-        'memory': mem.toJson(),
-      }));
-    default:
-      req.response
-        ..statusCode = 404
-        ..write(jsonEncode({'error': 'Not found'}));
-  }
-  await req.response.close();
 }

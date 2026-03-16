@@ -28,7 +28,7 @@ class MemCollector {
         buffersKb: mem['Buffers'] ?? 0,
       );
     } catch (e) {
-      _log.error('Falha ao coletar memória', {'error': e.toString()});
+      _log.error('Failed to collect memory metrics', {'error': e.toString()});
       return MemMetrics(
         totalKb: 0,
         freeKb: 0,

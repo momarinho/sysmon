@@ -5,7 +5,7 @@ import 'metrics_snapshot.dart';
 class CpuCollector {
   static final _log = Logger('CpuCollector');
 
-  // Estado anterior para cálculo diferencial
+  // Previous state used for differential CPU usage calculation.
   List<int>? _prevTotal;
   List<int>? _prevIdle;
 
@@ -13,7 +13,7 @@ class CpuCollector {
     try {
       final lines = await File('/proc/stat').readAsLines();
 
-      // Primeira linha = totais, linhas seguintes = cpu0, cpu1...
+      // First line = totals, following lines = cpu0, cpu1...
       final cpuLines = lines.where((l) => l.startsWith('cpu')).toList();
 
       final totals = <int>[];
@@ -25,8 +25,7 @@ class CpuCollector {
 
         // /proc/stat: user nice system idle iowait irq softirq steal
         final total = values.reduce((a, b) => a + b);
-        final idle =
-            values[3] + (values.length > 4 ? values[4] : 0); // idle + iowait
+        final idle = values[3] + (values.length > 4 ? values[4] : 0);
 
         totals.add(total);
         idles.add(idle);
@@ -44,7 +43,7 @@ class CpuCollector {
               deltaTotal > 0 ? (1.0 - deltaIdle / deltaTotal) * 100.0 : 0.0;
 
           if (i == 0) {
-            overallUsage = usage; // índice 0 = linha "cpu" (soma de todos)
+            overallUsage = usage;
           } else {
             perCore.add(double.parse(usage.toStringAsFixed(1)));
           }
@@ -60,7 +59,7 @@ class CpuCollector {
         perCore: perCore,
       );
     } catch (e) {
-      _log.error('Falha ao coletar CPU', {'error': e.toString()});
+      _log.error('Failed to collect CPU metrics', {'error': e.toString()});
       return CpuMetrics(usagePercent: 0, cores: 0, perCore: []);
     }
   }

@@ -4,20 +4,20 @@
 
 # Sysmon
 
-Monitor de sistema em Dart com backend para coleta de metricas no Linux e um frontend Flutter Desktop planejado para visualizacao em tempo real.
+A Dart-based system monitor with a backend for collecting Linux metrics and a planned Flutter Desktop frontend for real-time visualization.
 
-## Objetivo
+## Goal
 
-O projeto foi pensado para expor snapshots de uso de CPU, memoria, disco, rede e status de servicos via WebSocket, permitindo que um dashboard Flutter consuma os dados em tempo real.
+The project is designed to expose snapshots of CPU, memory, disk, network, and service status over WebSocket so a Flutter dashboard can consume the data in real time.
 
 ## Status
 
-O repositorio esta na fase inicial e, neste momento, a base em Dart esta sendo estruturada primeiro.
-O frontend Flutter Desktop faz parte da arquitetura planejada e sera adicionado depois no mesmo ecossistema.
+The repository is in its initial phase, and the Dart backend foundation is being built first.
+The Flutter Desktop frontend is part of the planned architecture and will be added later in the same ecosystem.
 
-## Configuracao
+## Configuration
 
-As configuracoes devem vir de variaveis de ambiente. Exemplo:
+Configuration should come from environment variables. Example:
 
 ```env
 SYSMON_PORT=8080
@@ -26,29 +26,29 @@ SYSMON_SERVICES=postgresql,redis,elasticsearch
 SYSMON_LOG_LEVEL=info
 ```
 
-## Estrutura Planejada
+## Planned Structure
 
 ```text
 ┌─────────────────────────────────────────────┐
 │         Flutter Desktop (Frontend)          │
-│  Dashboard com fl_chart + riverpod          │
+│  Dashboard with fl_chart + riverpod         │
 └───────────────┬─────────────────────────────┘
                 │ WebSocket (JSON stream)
                 │ ws://localhost:8080/ws
 ┌───────────────▼─────────────────────────────┐
-│         Dart Backend (Servidor)             │
+│         Dart Backend (Server)               │
 │                                             │
 │  ┌──────────────────────────────────────┐   │
-│  │  Collector Loop (a cada 2s)          │   │
+│  │  Collector Loop (every 2s)           │   │
 │  │  cpu · mem · disk · net · services   │   │
 │  └──────────────┬───────────────────────┘   │
 │                 │ Stream<MetricsSnapshot>   │
 │  ┌──────────────▼───────────────────────┐   │
 │  │  WebSocket Handler                   │   │
-│  │  Broadcast para todos os clientes    │   │
+│  │  Broadcast to all clients            │   │
 │  └──────────────────────────────────────┘   │
 └─────────────────────────────────────────────┘
-                │ le
+                │ reads
 ┌───────────────▼─────────────────────────────┐
 │  Linux Kernel                               │
 │  /proc/stat · /proc/meminfo · /proc/net/dev │
@@ -56,9 +56,9 @@ SYSMON_LOG_LEVEL=info
 └─────────────────────────────────────────────┘
 ```
 
-## Roadmap Inicial
+## Initial Roadmap
 
-- Estruturar o backend em Dart para leitura das fontes do Linux.
-- Gerar `MetricsSnapshot` em intervalo configuravel.
-- Expor stream via WebSocket para multiplos clientes.
-- Adicionar frontend Flutter Desktop para dashboard em tempo real.
+- Structure the Dart backend to read Linux data sources.
+- Generate `MetricsSnapshot` on a configurable interval.
+- Expose the stream over WebSocket for multiple clients.
+- Add a Flutter Desktop frontend for a real-time dashboard.
