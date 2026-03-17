@@ -292,6 +292,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 swapUsedKb:
                     snapshot.memory.swapTotalKb - snapshot.memory.swapFreeKb,
                 swapTotalKb: snapshot.memory.swapTotalKb,
+                availableKb: snapshot.memory.availableKb,
               ),
             ),
           ],

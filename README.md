@@ -1,14 +1,14 @@
-![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust-000000?style=flat&logo=rust&logoColor=white)
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logo=flutter&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat&logo=linux&logoColor=black)
 
 # Sysmon
 
-A Dart-based system monitor with a phase-2 backend that collects Linux metrics and exposes them over HTTP, Prometheus, and WebSocket for a future Flutter Desktop frontend.
+Sysmon is a Linux system monitor with a Rust backend and a Flutter Desktop frontend.
 
 ## Goal
 
-The project is designed to expose snapshots of CPU, memory, disk, network, and service status over WebSocket so a Flutter dashboard can consume the data in real time.
+The backend collects system metrics from Linux sources such as `/proc` and exposes them over HTTP and WebSocket so the Flutter dashboard can consume them in real time.
 
 ## Status
 
@@ -18,10 +18,16 @@ Current backend scope:
 - Periodic collection loop
 - `GET /health` liveness endpoint
 - `GET /metrics` JSON snapshot endpoint
-- `GET /metrics/prometheus` Prometheus exposition endpoint
+- `GET /metrics/prometheus` not implemented yet
 - `GET /ws` WebSocket stream for realtime snapshots
 - Structured JSON logging to stdout
 - Environment-based validated configuration
+
+Current frontend scope:
+
+- Linux Flutter desktop app in `flutter_app`
+- Realtime dashboard connected to `ws://localhost:8080/ws`
+- CPU and memory visualization
 
 ## Configuration
 
@@ -44,8 +50,23 @@ Rules:
 ## Running
 
 ```bash
-dart run bin/server.dart
+cargo run
 ```
+
+The active backend entrypoint is [src/main.rs](/run/media/mateus/f8271cf2-fe57-43a3-a203-4b4c407bd599/sysmon/src/main.rs).
+
+To run the Flutter desktop app:
+
+```bash
+cd flutter_app
+flutter run -d linux
+```
+
+## Pending Work
+
+- Implement `GET /metrics/prometheus` in Rust
+- Add disk, network, and service collectors
+- Expand production and packaging setup
 
 ## Phase 2 checks
 
@@ -57,11 +78,10 @@ curl -s http://localhost:8080/health | jq .
 curl -s http://localhost:8080/metrics | jq .
 
 # Prometheus exposition
-curl -s http://localhost:8080/metrics/prometheus
+curl -i http://localhost:8080/metrics/prometheus
 
 # Backend validation
-dart analyze
-dart test
+cargo test
 ```
 
 ## Logging
@@ -85,7 +105,7 @@ Request-specific logs and responses also include `request_id`.
                 │ WebSocket (JSON stream)
                 │ ws://localhost:8080/ws
 ┌───────────────▼─────────────────────────────┐
-│         Dart Backend (Server)               │
+│         Rust Backend (Server)               │
 │                                             │
 │  ┌──────────────────────────────────────┐   │
 │  │  Collector Loop (every 2s)           │   │
@@ -105,9 +125,18 @@ Request-specific logs and responses also include `request_id`.
 └─────────────────────────────────────────────┘
 ```
 
-## Initial Roadmap
+## Rust Backend Files
 
-- Structure the Dart backend to read Linux data sources.
-- Generate `MetricsSnapshot` on a configurable interval.
-- Expose the stream over WebSocket for multiple clients.
-- Add a Flutter Desktop frontend for a real-time dashboard.
+- [Cargo.toml](/run/media/mateus/f8271cf2-fe57-43a3-a203-4b4c407bd599/sysmon/Cargo.toml)
+- [src/main.rs](/run/media/mateus/f8271cf2-fe57-43a3-a203-4b4c407bd599/sysmon/src/main.rs)
+- [src/config.rs](/run/media/mateus/f8271cf2-fe57-43a3-a203-4b4c407bd599/sysmon/src/config.rs)
+- [src/logging.rs](/run/media/mateus/f8271cf2-fe57-43a3-a203-4b4c407bd599/sysmon/src/logging.rs)
+- [src/models.rs](/run/media/mateus/f8271cf2-fe57-43a3-a203-4b4c407bd599/sysmon/src/models.rs)
+- [src/collectors.rs](/run/media/mateus/f8271cf2-fe57-43a3-a203-4b4c407bd599/sysmon/src/collectors.rs)
+- [src/server.rs](/run/media/mateus/f8271cf2-fe57-43a3-a203-4b4c407bd599/sysmon/src/server.rs)
+
+## Frontend Files
+
+- [flutter_app/pubspec.yaml](/run/media/mateus/f8271cf2-fe57-43a3-a203-4b4c407bd599/sysmon/flutter_app/pubspec.yaml)
+- [flutter_app/lib/main.dart](/run/media/mateus/f8271cf2-fe57-43a3-a203-4b4c407bd599/sysmon/flutter_app/lib/main.dart)
+- [flutter_app/lib/screens/dashboard_screen.dart](/run/media/mateus/f8271cf2-fe57-43a3-a203-4b4c407bd599/sysmon/flutter_app/lib/screens/dashboard_screen.dart)

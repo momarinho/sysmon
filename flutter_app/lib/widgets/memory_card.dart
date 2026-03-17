@@ -7,15 +7,17 @@ class MemoryCard extends StatelessWidget {
   final int cachedKb;
   final int swapUsedKb;
   final int swapTotalKb;
+  final int availableKb;
 
   const MemoryCard({
-    Key? key,
+    super.key,
     required this.totalKb,
     required this.usedKb,
     required this.cachedKb,
     required this.swapUsedKb,
     required this.swapTotalKb,
-  }) : super(key: key);
+    required this.availableKb,
+  });
 
   String _formatBytes(int kb) {
     final bytes = kb * 1024;
@@ -32,7 +34,10 @@ class MemoryCard extends StatelessWidget {
     return (usedKb / totalKb * 100);
   }
 
-  double get freePercent => 100 - usedPercent;
+  double get freePercent {
+    if (totalKb == 0) return 0;
+    return (availableKb / totalKb * 100);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +91,7 @@ class MemoryCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   Text(
-                    _formatBytes(totalKb - usedKb),
+                    _formatBytes(availableKb),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -101,12 +106,12 @@ class MemoryCard extends StatelessWidget {
                   minHeight: 8,
                   backgroundColor:
                       isDark ? AppColors.borderDark : AppColors.borderLight,
-                  valueColor: AlwaysStoppedAnimation(AppColors.statusGreen),
+                  valueColor: const AlwaysStoppedAnimation(AppColors.statusGreen),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                '${(totalKb - usedKb * 1024).toStringAsFixed(0)} KB available',
+                '$availableKb KB available',
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ],

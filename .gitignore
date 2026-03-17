@@ -1,11 +1,45 @@
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+*.rlib
+
+# Flutter/Dart
 .dart_tool/
 build/
 pubspec.lock
-.env
-*.exe
-docs_test
+.flutter-plugins
+.flutter-plugins-dependencies
 
-# Tutoriais de aprendizado (arquivos locais, não vão para o repo)
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+*~
+.DS_Store
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# OS
+*.exe
+Thumbs.db
+
+# Test artifacts
+docs_test
+coverage/
+
+# Local learning files (não vão para o repo)
 FASE3_*.md
 GUIA_*.md
 CHEAT_SHEET_*.md
