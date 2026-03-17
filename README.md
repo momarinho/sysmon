@@ -4,7 +4,7 @@
 
 # Sysmon
 
-A Dart-based system monitor with a backend for collecting Linux metrics and a planned Flutter Desktop frontend for real-time visualization.
+A Dart-based system monitor with a phase-2 backend that collects Linux metrics and exposes them over HTTP, Prometheus, and WebSocket for a future Flutter Desktop frontend.
 
 ## Goal
 
@@ -12,12 +12,20 @@ The project is designed to expose snapshots of CPU, memory, disk, network, and s
 
 ## Status
 
-The repository is in its initial phase, and the Dart backend foundation is being built first.
-The Flutter Desktop frontend is part of the planned architecture and will be added later in the same ecosystem.
+Current backend scope:
+
+- CPU and memory collectors
+- Periodic collection loop
+- `GET /health` liveness endpoint
+- `GET /metrics` JSON snapshot endpoint
+- `GET /metrics/prometheus` Prometheus exposition endpoint
+- `GET /ws` WebSocket stream for realtime snapshots
+- Structured JSON logging to stdout
+- Environment-based validated configuration
 
 ## Configuration
 
-Configuration should come from environment variables. Example:
+Configuration comes from environment variables and is validated at startup. Example:
 
 ```env
 SYSMON_PORT=8080
@@ -25,6 +33,47 @@ SYSMON_INTERVAL_MS=2000
 SYSMON_SERVICES=postgresql,redis,elasticsearch
 SYSMON_LOG_LEVEL=info
 ```
+
+Rules:
+
+- `SYSMON_PORT`: integer between `1` and `65535`
+- `SYSMON_INTERVAL_MS`: integer greater than `0`
+- `SYSMON_SERVICES`: comma-separated list of service names
+- `SYSMON_LOG_LEVEL`: `debug`, `info`, `warn`, or `error`
+
+## Running
+
+```bash
+dart run bin/server.dart
+```
+
+## Phase 2 checks
+
+```bash
+# Liveness
+curl -s http://localhost:8080/health | jq .
+
+# JSON snapshot
+curl -s http://localhost:8080/metrics | jq .
+
+# Prometheus exposition
+curl -s http://localhost:8080/metrics/prometheus
+
+# Backend validation
+dart analyze
+dart test
+```
+
+## Logging
+
+Logs are emitted as JSON to stdout with stable fields:
+
+- `timestamp`
+- `level`
+- `component`
+- `message`
+
+Request-specific logs and responses also include `request_id`.
 
 ## Planned Structure
 

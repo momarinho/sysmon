@@ -8,10 +8,43 @@ enum LogLevel {
   error,
 }
 
-class Logger {
-  final String _context;
+extension LogLevelX on LogLevel {
+  static LogLevel parse(String value) {
+    final normalized = value.trim().toLowerCase();
 
-  const Logger(this._context);
+    for (final level in LogLevel.values) {
+      if (level.name == normalized) {
+        return level;
+      }
+    }
+
+    throw ArgumentError.value(
+      value,
+      'value',
+      'must be one of: ${LogLevel.values.map((level) => level.name).join(', ')}',
+    );
+  }
+}
+
+class Logger {
+  static LogLevel _minimumLevel = LogLevel.info;
+  static void Function(String line) _sink = stdout.writeln;
+
+  final String _context;
+  final void Function(String line)? _overrideSink;
+
+  const Logger(this._context, {void Function(String line)? sink})
+      : _overrideSink = sink;
+
+  static void configure({
+    required LogLevel minimumLevel,
+    void Function(String line)? sink,
+  }) {
+    _minimumLevel = minimumLevel;
+    if (sink != null) {
+      _sink = sink;
+    }
+  }
 
   void debug(String msg, [Map<String, dynamic>? extra]) =>
       _log(LogLevel.debug, msg, extra);
@@ -23,14 +56,19 @@ class Logger {
       _log(LogLevel.error, msg, extra);
 
   void _log(LogLevel level, String msg, Map<String, dynamic>? extra) {
+    if (level.index < _minimumLevel.index) {
+      return;
+    }
+
     final entry = <String, dynamic>{
-      'ts': DateTime.now().toUtc().toIso8601String(),
+      'timestamp': DateTime.now().toUtc().toIso8601String(),
       'level': level.name,
-      'context': _context,
-      'msg': msg,
+      'component': _context,
+      'message': msg,
       if (extra != null) ...extra,
     };
-    // Write the log entry as a JSON string to stdout.
-    stdout.writeln(jsonEncode(entry));
+
+    final sink = _overrideSink ?? _sink;
+    sink(jsonEncode(entry));
   }
 }

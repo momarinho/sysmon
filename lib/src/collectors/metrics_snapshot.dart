@@ -35,7 +35,13 @@ class MemMetrics {
     required this.buffersKb,
   });
 
-  double get usedPercent => ((totalKb - availableKb) / totalKb * 100);
+  double get usedPercent {
+    if (totalKb == 0) {
+      return 0;
+    }
+
+    return ((totalKb - availableKb) / totalKb * 100);
+  }
 
   Map<String, dynamic> toJson() => {
         'total_kb': totalKb,

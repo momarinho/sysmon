@@ -8,6 +8,7 @@ import '../logging/logger.dart';
 
 class HttpHandler {
   static final _log = Logger('HttpHandler');
+  static int _requestSequence = 0;
 
   final CollectorLoop _loop;
   final WebSocketHandler _ws;
@@ -16,19 +17,23 @@ class HttpHandler {
   HttpHandler(this._loop, this._ws);
 
   Future<void> handle(HttpRequest req) async {
+    final requestId = 'req-${++_requestSequence}';
     _log.debug('Request', {
+      'request_id': requestId,
       'method': req.method,
       'path': req.uri.path,
       'remote': req.connectionInfo?.remoteAddress.address,
     });
 
     req.response.headers.set('Access-Control-Allow-Origin', '*');
+    req.response.headers.set('X-Request-Id', requestId);
 
     switch (req.uri.path) {
       case '/health':
         req.response.headers.contentType = ContentType.json;
         req.response.write(jsonEncode({
           'status': 'ok',
+          'request_id': requestId,
           'uptime_seconds': DateTime.now().difference(_startTime).inSeconds,
           'version': '0.2.0',
         }));
@@ -41,7 +46,10 @@ class HttpHandler {
         if (snapshot == null) {
           req.response
             ..statusCode = HttpStatus.serviceUnavailable
-            ..write(jsonEncode({'error': 'collecting, try again'}));
+            ..write(jsonEncode({
+              'error': 'collecting, try again',
+              'request_id': requestId,
+            }));
         } else {
           req.response.write(jsonEncode(snapshot.toJson()));
         }
@@ -54,7 +62,10 @@ class HttpHandler {
           req.response
             ..statusCode = HttpStatus.serviceUnavailable
             ..headers.contentType = ContentType.json
-            ..write(jsonEncode({'error': 'collecting, try again'}));
+            ..write(jsonEncode({
+              'error': 'collecting, try again',
+              'request_id': requestId,
+            }));
         } else {
           req.response.headers.set(
             HttpHeaders.contentTypeHeader,
@@ -73,7 +84,10 @@ class HttpHandler {
         req.response.headers.contentType = ContentType.json;
         req.response
           ..statusCode = HttpStatus.notFound
-          ..write(jsonEncode({'error': 'not found'}));
+          ..write(jsonEncode({
+            'error': 'not found',
+            'request_id': requestId,
+          }));
         await req.response.close();
         return;
     }

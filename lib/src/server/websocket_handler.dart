@@ -32,7 +32,7 @@ class WebSocketHandler {
 
     final ws = await WebSocketTransformer.upgrade(req);
     _clients.add(ws);
-    _log.info('Client connected', {'clientCount': _clients.length});
+    _log.info('Client connected', {'client_count': _clients.length});
 
     final latest = _latestSnapshot?.call();
     if (latest != null) {
@@ -41,7 +41,7 @@ class WebSocketHandler {
 
     ws.done.then((_) {
       _clients.remove(ws);
-      _log.info('Client disconnected', {'clientCount': _clients.length});
+      _log.info('Client disconnected', {'client_count': _clients.length});
     });
   }
 

@@ -8,6 +8,7 @@ import '../logging/logger.dart';
 class CollectorLoop {
   static final _log = Logger('CollectorLoop');
 
+  final Config _config;
   final _controller = StreamController<MetricsSnapshot>.broadcast();
   final _cpu = CpuCollector();
   final _mem = MemCollector();
@@ -17,6 +18,8 @@ class CollectorLoop {
   Future<void>? _inFlightCollect;
   bool _started = false;
   bool _stopped = false;
+
+  CollectorLoop({required Config config}) : _config = config;
 
   Stream<MetricsSnapshot> get stream => _controller.stream;
   MetricsSnapshot? get latest => _latest;
@@ -30,13 +33,13 @@ class CollectorLoop {
     _started = true;
     _stopped = false;
     _log.info('Starting collection', {
-      'interval_ms': Config.intervalMs,
+      'interval_ms': _config.intervalMs,
     });
 
     _triggerCollect();
 
     _timer = Timer.periodic(
-      Duration(milliseconds: Config.intervalMs),
+      Duration(milliseconds: _config.intervalMs),
       (_) => _triggerCollect(),
     );
   }

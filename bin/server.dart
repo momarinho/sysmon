@@ -10,7 +10,10 @@ import 'package:sysmon/src/server/websocket_handler.dart';
 final _log = Logger('Main');
 
 Future<void> main() async {
-  final loop = CollectorLoop();
+  final config = Config.fromEnv();
+  Logger.configure(minimumLevel: config.logLevel);
+
+  final loop = CollectorLoop(config: config);
   final ws = WebSocketHandler(latestSnapshot: () => loop.latest);
   final handler = HttpHandler(loop, ws);
   var shuttingDown = false;
@@ -21,7 +24,7 @@ Future<void> main() async {
 
   final server = await HttpServer.bind(
     InternetAddress.loopbackIPv4,
-    Config.port,
+    config.port,
   );
 
   Future<void> shutdown() async {
@@ -41,7 +44,10 @@ Future<void> main() async {
   });
 
   _log.info('Server started', {
-    'port': Config.port,
+    'port': config.port,
+    'interval_ms': config.intervalMs,
+    'services': config.services,
+    'log_level': config.logLevel.name,
     'endpoints': ['/health', '/metrics', '/metrics/prometheus', '/ws'],
   });
 
