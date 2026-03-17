@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  // Primária
+  // Primary
   static const Color primary = Color(0xFF0d59f2);
   static const Color primaryLight = Color(0xFF1a6aff);
   static const Color primaryDark = Color(0xFF0047cc);
@@ -40,10 +40,9 @@ class AppTheme {
         elevation: 0,
       ),
       primaryColor: AppColors.primary,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         surface: AppColors.surfaceDark,
-        background: AppColors.backgroundDark,
       ),
       textTheme: GoogleFonts.interTextTheme(
         const TextTheme(
@@ -85,10 +84,9 @@ class AppTheme {
         elevation: 0,
       ),
       primaryColor: AppColors.primary,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         surface: AppColors.surfaceLight,
-        background: AppColors.backgroundLight,
       ),
       textTheme: GoogleFonts.interTextTheme(
         const TextTheme(
