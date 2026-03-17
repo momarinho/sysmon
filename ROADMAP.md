@@ -140,11 +140,41 @@ Nota: `systemd` faz parte da preparacao operacional, mas nao deve bloquear a con
 
 Objetivo: entregar dashboard Flutter Desktop e pipeline de CI cobrindo backend e frontend.
 
+### Design System
+
+- Obrigatorio: paleta de cores centralizada
+  - Primaria: `#0d59f2` (azul)
+  - Background dark: `#101622`
+  - Background light: `#f5f6f8`
+  - Status verde: `#10b981`, laranja: `#f59e0b`, vermelho: `#ef4444`
+- Obrigatorio: componentes visuais padronizados
+  - KPI cards com titulo, valor, icone e indicador
+  - Grafico de serie temporal com area preenchida
+  - Cards de metricas com barras de progresso
+  - Status indicators com dots e cores
+  - Sidebar com navegacao e perfil do usuario
+- Obrigatorio: icones Material Symbols Outlined
+- Obrigatorio: tema dark mode com transicoes suaves
+- Recomendado: `lib/theme/app_theme.dart` centralizando cores, tipografia e estilos
+- Recomendado: documentacao visual ou guia de componentes
+
+### Mock/Prototipo como Entregavel
+
+- Obrigatorio: HTML mockup aprovado como referencia visual antes de implementacao
+- Obrigatorio: checkpoint de alinhamento com design antes de iniciar codigo Flutter
+- Recomendado: comparacao visual entre mockup e implementacao Flutter final
+
 ### Flutter Desktop setup
 
 - Obrigatorio: `flutter create --platforms=linux flutter_app`
 - Obrigatorio: habilitar Linux desktop no ambiente
-- Obrigatorio: dependencias planejadas no `pubspec.yaml`
+- Obrigatorio: dependencias no `pubspec.yaml`:
+  - `riverpod` e `flutter_riverpod` para state management
+  - `fl_chart` para graficos de series temporais
+  - `material_design_icons` para iconografia
+  - `intl` para formatacao de numeros e datas
+  - `web_socket_channel` para conexao WebSocket
+- Recomendado: versoes fixadas em `pubspec.lock` para reproducibilidade
 
 ### Providers e dados
 
@@ -195,6 +225,15 @@ Objetivo: entregar dashboard Flutter Desktop e pipeline de CI cobrindo backend e
 - Obrigatorio: grafico de CPU atualiza em tempo real
 - Obrigatorio: card de memoria mostra dados corretos
 - Obrigatorio: GitHub Actions verde para backend e frontend
+- Obrigatorio: validacao visual
+  - [ ] Cores seguem paleta definida (azul primaria, backgrounds dark/light)
+  - [ ] Dark mode funciona e tem transicoes suaves
+  - [ ] Icones Material Symbols aparecem corretamente
+  - [ ] Layout match mockup HTML (sidebar + main area)
+  - [ ] Tipografia consistente entre componentes
+  - [ ] Cards de status mostram indicadores de saude
+- Recomendado: comparacao lado-a-lado do mockup HTML com app Flutter
+- Recomendado: validacao em resolucoes diferentes (1920x1080, 2560x1440, 1600x900)
 
 ## Fase 4 - Producao e Empacotamento Final
 

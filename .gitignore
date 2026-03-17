@@ -3,3 +3,13 @@ build/
 pubspec.lock
 .env
 *.exe
+docs_test
+
+# Tutoriais de aprendizado (arquivos locais, não vão para o repo)
+FASE3_*.md
+GUIA_*.md
+CHEAT_SHEET_*.md
+EXEMPLOS_TESTES_*.md
+INDICE_*.md
+LISTA_ARQUIVOS_*.md
+RESUMO_*.md
