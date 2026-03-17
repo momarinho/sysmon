@@ -1,28 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:sysmon_dashboard/widgets/memory_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sysmon_dashboard/screens/dashboard_screen.dart';
+import 'package:sysmon_dashboard/theme/app_colors.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Flutter Demo',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: MemoryCard(
-          totalKb: 16 * 1024 * 1024,
-          // 16 GB
-          usedKb: 8 * 1024 * 1024,
-          // 8 GB
-          cachedKb: 2 * 1024 * 1024,
-          // 2 GB
-          swapUsedKb: 1 * 1024 * 1024,
-          // 1 GB
-          swapTotalKb: 2 * 1024 * 1024, // 2 GB
-        ));
+      title: 'Sysmon Dashboard',
+      theme: AppTheme.lightTheme(),
+      darkTheme: AppTheme.darkTheme(),
+      themeMode: ThemeMode.dark,
+      home: const DashboardScreen(),
+      debugShowCheckedModeBanner: false,
+    );
   }
 }

@@ -20,10 +20,10 @@ class Sidebar extends StatelessWidget {
   final VoidCallback? onLogout;
 
   const Sidebar({
-    Key? key,
+    super.key,
     required this.items,
     this.onLogout,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
