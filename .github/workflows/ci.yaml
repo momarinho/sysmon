@@ -1,0 +1,143 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # BACKEND - RUST
+  backend:
+    name: Backend - Rust
+    runs-on: ubuntu-latest
+
+    # Matrix: testa em multiplas versoes de Rust
+    strategy:
+      matrix:
+        rust: [ stable, beta ]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Instala Rust (com versao especifica)
+      - name: Install Rust (${{ matrix.rust }})
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+
+      # Cache para acelerar builds seguintes
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+
+      # Testa o codigo
+      - name: Run tests
+        run: cargo test --verbose
+
+      # Build da versao otimizada (release)
+      - name: Build release binary
+        run: cargo build --release --verbose
+
+      # SMOKE TESTS - Testa os 3 endpoints principais
+      - name: Smoke tests - All endpoints
+        run: |
+          ./target/release/sysmon-rs &
+          SERVER_PID=$!
+          
+          echo "Waiting for server to start..."
+          sleep 3
+          
+          echo "Testing /health..."
+          curl -f http://localhost:8080/health && echo " OK" || exit 1
+          
+          echo "Testing /metrics..."
+          curl -f http://localhost:8080/metrics | jq . && echo " OK" || exit 1
+          
+          echo "Testing /metrics/prometheus..."
+          PROM=$(curl -f http://localhost:8080/metrics/prometheus)
+          echo "$PROM" | grep -q "sysmon_cpu_usage_percent" && echo " OK" || exit 1
+          
+          kill $SERVER_PID
+          echo "All smoke tests passed!"
+        shell: bash
+
+      # Upload do binario backend compilado
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        if: matrix.rust == 'stable'
+        with:
+          name: sysmon-rs-linux-x64
+          path: target/release/sysmon-rs
+          retention-days: 30
+
+  # FRONTEND - FLUTTER
+  frontend:
+    name: Frontend - Flutter
+    runs-on: ubuntu-latest
+
+    # Matrix: testa em multiplas versoes de Flutter
+    strategy:
+      matrix:
+        flutter-version: [ '3.19.0', '3.24.0' ]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Instala Flutter
+      - name: Install Flutter (${{ matrix.flutter-version }})
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter-version }}
+
+      # Baixa dependencias
+      - name: Install dependencies
+        run: |
+          cd flutter_app
+          flutter pub get
+
+      # Analisa codigo (lint)
+      - name: Analyze code
+        run: |
+          cd flutter_app
+          flutter analyze
+
+      # EXECUTA TESTES DO FLUTTER
+      - name: Run Flutter tests
+        run: |
+          cd flutter_app
+          flutter test --coverage
+        continue-on-error: true
+
+      # Build Linux release
+      - name: Build Linux release
+        run: |
+          cd flutter_app
+          flutter build linux --release
+
+      # Upload do build do Flutter
+      - name: Upload Flutter build artifact
+        uses: actions/upload-artifact@v4
+        if: matrix.flutter-version == '3.19.0'
+        with:
+          name: sysmon-flutter-linux
+          path: flutter_app/build/linux/x64/release/bundle/
+          retention-days: 30
+
+  # VALIDACAO FINAL (roda apos backend e frontend)
+  validate:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [ backend, frontend ]
+    if: always()
+
+    steps:
+      - name: Check job status
+        run: |
+          if [ "${{ needs.backend.result }}" == "failure" ] || [ "${{ needs.frontend.result }}" == "failure" ]; then
+            echo "Pipeline failed"
+            exit 1
+          else
+            echo "Pipeline passed!"
+          fi

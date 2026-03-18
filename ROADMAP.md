@@ -153,6 +153,31 @@ Objetivo: consolidar o dashboard e automatizar validacao do projeto inteiro.
 - Obrigatorio: GitHub Actions verde para backend e frontend
 - Recomendado: validacao em mais de uma resolucao
 
+## Fase 3.5 - CLI (Interface de Linha de Comando)
+
+Objetivo: fornecer ferramenta de linha de comando para gerenciar e consultar o daemon do backend.
+
+### Comandos Basicos
+
+- Obrigatorio: `sysmon status` - verifica se o servidor esta rodando
+- Obrigatorio: `sysmon show-config` - exibe configuracao atual
+- Obrigatorio: `sysmon metrics` - fetch em `/metrics` e formata saida
+- Obrigatorio: `sysmon health` - verifica `/health` endpoint
+
+### Implementacao
+
+- Obrigatorio: usar `clap` para parsing de argumentos
+- Obrigatorio: testes unitarios para parsers e chamadas HTTP
+- Recomendado: output formatado (JSON ou tabular)
+- Recomendado: codigo desacoplado da logica do servidor
+
+### Checklist de saida
+
+- Obrigatorio: `cargo test` com testes de CLI verde
+- Obrigatorio: cada comando respondendo sem erro
+- Obrigatorio: tratamento de erro quando servidor nao esta disponivel
+- Recomendado: help message completo em `sysmon --help`
+
 ## Fase 4 - Expansao de Metricas
 
 Objetivo: completar os coletores planejados e ampliar o modelo de snapshot sem quebrar o frontend atual.
