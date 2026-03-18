@@ -11,6 +11,7 @@ Convencoes deste documento:
 - Obrigatorio: item necessario para considerar a fase concluida
 - Recomendado: item importante para reduzir risco ou retrabalho
 - Adiavel: item util, mas que pode esperar
+  a
 
 ## Estado Atual
 
@@ -91,12 +92,12 @@ Objetivo: fechar a paridade minima do backend e estabilizar o contrato consumido
 
 - Obrigatorio: implementar formatter Rust com `# HELP` e `# TYPE`
 - Obrigatorio: exportar no minimo:
-  - `sysmon_cpu_usage_percent`
-  - `sysmon_cpu_cores_total`
-  - `sysmon_memory_total_bytes`
-  - `sysmon_memory_available_bytes`
-  - `sysmon_memory_used_percent`
-  - `sysmon_memory_swap_total_bytes`
+    - `sysmon_cpu_usage_percent`
+    - `sysmon_cpu_cores_total`
+    - `sysmon_memory_total_bytes`
+    - `sysmon_memory_available_bytes`
+    - `sysmon_memory_used_percent`
+    - `sysmon_memory_swap_total_bytes`
 - Obrigatorio: responder `text/plain; version=0.0.4; charset=utf-8`
 
 ### Logs de request
@@ -140,12 +141,12 @@ Objetivo: consolidar o dashboard e automatizar validacao do projeto inteiro.
 ### CI - GitHub Actions
 
 - Obrigatorio: job `backend`
-  - `cargo test`
-  - `cargo build --release`
+    - `cargo test`
+    - `cargo build --release`
 - Obrigatorio: job `frontend`
-  - `flutter analyze`
-  - `flutter test`
-  - `flutter build linux --release`
+    - `flutter analyze`
+    - `flutter test`
+    - `flutter build linux --release`
 
 ### Checklist de saida
 
