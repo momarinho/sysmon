@@ -5,11 +5,15 @@ import 'package:sysmon_dashboard/theme/app_colors.dart';
 class CPUChart extends StatelessWidget {
   final List<double> data;
   final double currentValue;
+  final String modelName;
+  final int cores;
 
   const CPUChart({
     super.key,
     required this.data,
     required this.currentValue,
+    required this.modelName,
+    required this.cores,
   });
 
   @override
@@ -17,10 +21,10 @@ class CPUChart extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
         ),
@@ -28,144 +32,198 @@ class CPUChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'CPU Usage Over Time',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Intel(R) Xeon(R) CPU',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'Real-time',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CPU Usage Over Time',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        modelName,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Current Value
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '${currentValue.toStringAsFixed(1)}%',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      fontSize: 36,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: const Text(
+                        'Real-time',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
                     ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Average Load',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Chart
-          if (data.isNotEmpty)
-            SizedBox(
-              height: 200,
-              child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: 25,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
                         color: isDark
-                            ? AppColors.borderDark.withOpacity(0.3)
-                            : AppColors.borderLight.withOpacity(0.3),
-                        strokeWidth: 0.5,
-                      );
-                    },
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
-                    topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            '${value.toInt()}%',
-                            style: Theme.of(context).textTheme.labelSmall,
-                          );
-                        },
-                        reservedSize: 40,
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.black.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(5),
                       ),
-                    ),
-                    bottomTitles: const AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: false,
-                      ),
-                    ),
-                  ),
-                  borderData: FlBorderData(
-                    show: true,
-                    border: Border(
-                      left: BorderSide(
-                        color: isDark
-                            ? AppColors.borderDark
-                            : AppColors.borderLight,
-                      ),
-                      bottom: BorderSide(
-                        color: isDark
-                            ? AppColors.borderDark
-                            : AppColors.borderLight,
-                      ),
-                    ),
-                  ),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: data.asMap().entries.map((e) {
-                        return FlSpot(e.key.toDouble(), e.value);
-                      }).toList(),
-                      isCurved: true,
-                      color: AppColors.primary,
-                      barWidth: 2,
-                      isStrokeCapRound: true,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: AppColors.primary.withOpacity(0.2),
+                      child: Text(
+                        '1h',
+                        style: Theme.of(context).textTheme.labelSmall,
                       ),
                     ),
                   ],
-                  minY: 0,
-                  maxY: 100,
+                ),
+              ],
+            ),
+          ),
+          Container(
+            height: 1,
+            color: isDark
+                ? AppColors.borderDark.withValues(alpha: 0.7)
+                : AppColors.borderLight,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  '${currentValue.toStringAsFixed(0)}%',
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                        fontSize: 28,
+                      ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Average Load',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const Spacer(),
+                Text(
+                  '$cores cores',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (data.isNotEmpty)
+            SizedBox(
+              height: 260,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+                child: LineChart(
+                  LineChartData(
+                    gridData: const FlGridData(
+                      show: false,
+                    ),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      leftTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: data.length > 1
+                              ? (data.length / 5).ceilToDouble()
+                              : 1,
+                          reservedSize: 22,
+                          getTitlesWidget: (value, meta) {
+                            final labels = _timeLabels(data.length);
+                            final index = value.round();
+                            if (index < 0 || index >= labels.length) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                labels[index],
+                                style: Theme.of(context).textTheme.labelSmall,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: data.asMap().entries.map((e) {
+                          return FlSpot(e.key.toDouble(), e.value);
+                        }).toList(),
+                        isCurved: true,
+                        curveSmoothness: 0.28,
+                        color: AppColors.primary,
+                        barWidth: 2.4,
+                        isStrokeCapRound: true,
+                        dotData: const FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.primary.withValues(alpha: 0.34),
+                              AppColors.graphFill.withValues(alpha: 0.08),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                    ],
+                    minX: 0,
+                    maxX: data.length > 1 ? (data.length - 1).toDouble() : 1,
+                    minY: 0,
+                    maxY: 100,
+                  ),
                 ),
               ),
             ),
         ],
       ),
     );
+  }
+
+  List<String> _timeLabels(int length) {
+    if (length <= 1) {
+      return const ['NOW'];
+    }
+
+    return List<String>.generate(length, (index) {
+      if (index == length - 1) {
+        return 'NOW';
+      }
+
+      final minutesAgo = ((length - 1 - index) * 5).clamp(5, 55);
+      return '${minutesAgo}m';
+    });
   }
 }

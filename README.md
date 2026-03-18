@@ -18,10 +18,11 @@ Current backend scope:
 - Periodic collection loop
 - `GET /health` liveness endpoint
 - `GET /metrics` JSON snapshot endpoint
-- `GET /metrics/prometheus` not implemented yet
+- `GET /metrics/prometheus` Prometheus exposition endpoint
 - `GET /ws` WebSocket stream for realtime snapshots
 - Structured JSON logging to stdout
 - Environment-based validated configuration
+- Request logs with `request_id`
 
 Current frontend scope:
 
@@ -64,9 +65,16 @@ flutter run -d linux
 
 ## Pending Work
 
-- Implement `GET /metrics/prometheus` in Rust
 - Add disk, network, and service collectors
 - Expand production and packaging setup
+- Keep backend and frontend CI green
+
+## CI
+
+GitHub Actions covers the required roadmap checks:
+
+- backend: `cargo test` and `cargo build --release`
+- frontend: `flutter analyze`, `flutter test`, and `flutter build linux --release`
 
 ## Phase 2 checks
 

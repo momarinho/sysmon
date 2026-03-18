@@ -80,7 +80,12 @@ fn parse_u16(
     min: u16,
     max: u16,
 ) -> Result<u16, ConfigError> {
-    let raw = env.get(key).map(String::as_str).unwrap_or_default().trim().to_owned();
+    let raw = env
+        .get(key)
+        .map(String::as_str)
+        .unwrap_or_default()
+        .trim()
+        .to_owned();
     if raw.is_empty() {
         return Ok(fallback);
     }
@@ -90,10 +95,14 @@ fn parse_u16(
         .map_err(|_| ConfigError::new(format!("{key} must be an integer, got \"{raw}\"")))?;
 
     if value < min {
-        return Err(ConfigError::new(format!("{key} must be >= {min}, got {value}")));
+        return Err(ConfigError::new(format!(
+            "{key} must be >= {min}, got {value}"
+        )));
     }
     if value > max {
-        return Err(ConfigError::new(format!("{key} must be <= {max}, got {value}")));
+        return Err(ConfigError::new(format!(
+            "{key} must be <= {max}, got {value}"
+        )));
     }
 
     Ok(value)
@@ -105,7 +114,12 @@ fn parse_u64(
     fallback: u64,
     min: u64,
 ) -> Result<u64, ConfigError> {
-    let raw = env.get(key).map(String::as_str).unwrap_or_default().trim().to_owned();
+    let raw = env
+        .get(key)
+        .map(String::as_str)
+        .unwrap_or_default()
+        .trim()
+        .to_owned();
     if raw.is_empty() {
         return Ok(fallback);
     }
@@ -115,7 +129,9 @@ fn parse_u64(
         .map_err(|_| ConfigError::new(format!("{key} must be an integer, got \"{raw}\"")))?;
 
     if value < min {
-        return Err(ConfigError::new(format!("{key} must be >= {min}, got {value}")));
+        return Err(ConfigError::new(format!(
+            "{key} must be >= {min}, got {value}"
+        )));
     }
 
     Ok(value)
@@ -153,5 +169,30 @@ mod tests {
         assert_eq!(config.services, vec!["postgresql", "redis"]);
         assert_eq!(config.log_level, LogLevel::Info);
     }
-}
 
+    #[test]
+    fn rejects_invalid_port() {
+        let mut env = HashMap::new();
+        env.insert("SYSMON_PORT".into(), "0".into());
+
+        let error = Config::from_map(env).unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            "ConfigError: SYSMON_PORT must be >= 1, got 0"
+        );
+    }
+
+    #[test]
+    fn rejects_empty_services_after_trimming() {
+        let mut env = HashMap::new();
+        env.insert("SYSMON_SERVICES".into(), " , ".into());
+
+        let error = Config::from_map(env).unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            "ConfigError: SYSMON_SERVICES must contain at least one service name"
+        );
+    }
+}

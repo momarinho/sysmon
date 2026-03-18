@@ -3,6 +3,7 @@ use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct CpuMetrics {
+    pub model_name: String,
     pub usage_percent: f64,
     pub cores: usize,
     pub per_core: Vec<f64>,
@@ -59,4 +60,3 @@ impl MemMetrics {
 pub fn round_one_decimal(value: f64) -> f64 {
     (value * 10.0).round() / 10.0
 }
-

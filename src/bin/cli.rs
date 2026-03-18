@@ -1,83 +1,139 @@
-use clap::Parser;
+use std::error::Error;
 
-#[derive(Parser)]
+use clap::{Args, Parser, Subcommand};
+use reqwest::StatusCode;
+use serde_json::Value;
+use sysmon_rs::Config;
+
+#[derive(Debug, Parser)]
 #[command(name = "sysmon")]
-#[command(about = "CLI para gerenciar sysmon")]
-struct Args {
+#[command(about = "CLI para consultar o backend Sysmon")]
+struct Cli {
     #[command(subcommand)]
     command: Command,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Subcommand)]
 enum Command {
-    Status {
-        #[arg(long, default_value = "http://localhost:8080")]
-        server: String,
-    },
-    ShowConfig {
-        #[arg(long, default_value = "http://localhost:8080")]
-        server: String,
-    },
-    Metrics {
-        #[arg(long, default_value = "http://localhost:8080")]
-        server: String,
-    },
-    Health {
-        #[arg(long, default_value = "http://localhost:8080")]
-        server: String,
-    },
+    Status(ServerArgs),
+    ShowConfig,
+    Metrics(ServerArgs),
+    Health(ServerArgs),
+}
+
+#[derive(Debug, Clone, Args)]
+struct ServerArgs {
+    #[arg(long, default_value = "http://127.0.0.1:8080")]
+    server: String,
 }
 
 #[tokio::main]
 async fn main() {
-    let args = Args::parse();
-    
-    let result = match args.command {
-        Command::Status { server } => check_status(&server).await,
-        Command::ShowConfig { server } => show_config(&server).await,
-        Command::Metrics { server } => fetch_metrics(&server).await,
-        Command::Health { server } => check_health(&server).await,
+    let cli = Cli::parse();
+
+    let result = match cli.command {
+        Command::Status(args) => check_status(&args.server).await,
+        Command::ShowConfig => show_config(),
+        Command::Metrics(args) => fetch_metrics(&args.server).await,
+        Command::Health(args) => check_health(&args.server).await,
     };
-    
-    if let Err(e) = result {
-        eprintln!("Erro: {}", e);
+
+    if let Err(error) = result {
+        eprintln!("error: {error}");
         std::process::exit(1);
     }
 }
 
-async fn check_status(server: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let client = reqwest::Client::new();
-    match client.get(&format!("{}/health", server)).send().await {
-        Ok(res) => {
-            println!("✓ Servidor rodando ({} {})", res.status().as_u16(), res.status().canonical_reason().unwrap_or("OK"));
-            Ok(())
-        }
-        Err(_) => {
-            println!("✗ Servidor offline");
-            Err("Servidor não respondeu".into())
-        }
+async fn check_status(server: &str) -> Result<(), Box<dyn Error>> {
+    let response = reqwest::Client::new()
+        .get(endpoint(server, "/health"))
+        .send()
+        .await?;
+
+    if response.status().is_success() {
+        println!("server online ({})", response.status());
+        return Ok(());
+    }
+
+    Err(format!("health check failed with status {}", response.status()).into())
+}
+
+async fn check_health(server: &str) -> Result<(), Box<dyn Error>> {
+    let response = reqwest::Client::new()
+        .get(endpoint(server, "/health"))
+        .send()
+        .await?;
+    let status = response.status();
+    let body = response.text().await?;
+
+    println!("status: {status}");
+    println!("{body}");
+
+    if status == StatusCode::OK {
+        Ok(())
+    } else {
+        Err(format!("health endpoint returned {}", status).into())
     }
 }
 
-async fn check_health(server: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let client = reqwest::Client::new();
-    let res = client.get(&format!("{}/health", server)).send().await?;
-    println!("Status: {}", res.status());
+async fn fetch_metrics(server: &str) -> Result<(), Box<dyn Error>> {
+    let response = reqwest::Client::new()
+        .get(endpoint(server, "/metrics"))
+        .send()
+        .await?;
+    let status = response.status();
+    let body = response.text().await?;
+
+    if !status.is_success() {
+        return Err(format!("metrics endpoint returned {}", status).into());
+    }
+
+    if let Ok(json) = serde_json::from_str::<Value>(&body) {
+        println!("{}", serde_json::to_string_pretty(&json)?);
+    } else {
+        println!("{body}");
+    }
+
     Ok(())
 }
 
-async fn fetch_metrics(server: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let client = reqwest::Client::new();
-    let res = client.get(&format!("{}/metrics", server)).send().await?;
-    let body = res.text().await?;
-    println!("{}", body);
+fn show_config() -> Result<(), Box<dyn Error>> {
+    let config = Config::from_env()?;
+
+    println!("port: {}", config.port);
+    println!("interval_ms: {}", config.interval_ms);
+    println!("services: {}", config.services.join(","));
+    println!("log_level: {}", config.log_level);
+
     Ok(())
 }
 
-async fn show_config(server: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let client = reqwest::Client::new();
-    let res = client.get(&format!("{}/health", server)).send().await?;
-    println!("Servidor: {}", server);
-    println!("Status: {}", res.status());
-    Ok(())
+fn endpoint(server: &str, path: &str) -> String {
+    format!("{}{}", server.trim_end_matches('/'), path)
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::Parser;
+
+    use super::{Cli, Command, endpoint};
+
+    #[test]
+    fn parses_metrics_command_with_custom_server() {
+        let cli = Cli::try_parse_from(["sysmon", "metrics", "--server", "http://localhost:9090"])
+            .expect("cli should parse");
+
+        match cli.command {
+            Command::Metrics(args) => assert_eq!(args.server, "http://localhost:9090"),
+            _ => panic!("expected metrics command"),
+        }
+    }
+
+    #[test]
+    fn joins_server_and_path_without_duplicate_slash() {
+        assert_eq!(
+            endpoint("http://localhost:8080/", "/health"),
+            "http://localhost:8080/health"
+        );
+    }
 }

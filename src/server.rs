@@ -90,6 +90,7 @@ pub async fn run_collector_loop(
 }
 
 async fn health(State(state): State<AppState>) -> Response {
+    let started = Instant::now();
     let request_id = next_request_id();
     let body = json!({
         "status": "ok",
@@ -97,10 +98,19 @@ async fn health(State(state): State<AppState>) -> Response {
         "uptime_seconds": state.start.elapsed().as_secs(),
         "version": "0.2.0",
     });
-    json_response(StatusCode::OK, &request_id, body, Some("/health"), "GET", None)
+    json_response(
+        StatusCode::OK,
+        &request_id,
+        body,
+        Some("/health"),
+        "GET",
+        started,
+        None,
+    )
 }
 
 async fn metrics(State(state): State<AppState>) -> Response {
+    let started = Instant::now();
     let request_id = next_request_id();
     let snapshot = state.latest.read().await.clone();
 
@@ -111,6 +121,7 @@ async fn metrics(State(state): State<AppState>) -> Response {
             serde_json::to_value(snapshot).unwrap_or_else(|_| json!({})),
             Some("/metrics"),
             "GET",
+            started,
             None,
         ),
         None => json_response(
@@ -122,12 +133,14 @@ async fn metrics(State(state): State<AppState>) -> Response {
             }),
             Some("/metrics"),
             "GET",
+            started,
             None,
         ),
     }
 }
 
 async fn prometheus_metrics(State(state): State<AppState>) -> Response {
+    let started = Instant::now();
     let request_id = next_request_id();
     let snapshot = state.latest.read().await.clone();
 
@@ -138,6 +151,7 @@ async fn prometheus_metrics(State(state): State<AppState>) -> Response {
             PrometheusFormatter::format(&snapshot),
             Some("/metrics/prometheus"),
             "GET",
+            started,
             None,
         ),
         None => json_response(
@@ -149,15 +163,13 @@ async fn prometheus_metrics(State(state): State<AppState>) -> Response {
             }),
             Some("/metrics/prometheus"),
             "GET",
+            started,
             None,
         ),
     }
 }
 
-async fn ws_upgrade(
-    ws: WebSocketUpgrade,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+async fn ws_upgrade(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {
     let request_id = next_request_id();
     Logger::new("HttpHandler").debug(
         "Request",
@@ -178,7 +190,9 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
     if let Some(snapshot) = state.latest.read().await.clone() {
         let _ = socket
             .send(Message::Text(
-                serde_json::to_string(&snapshot).unwrap_or_else(|_| "{}".into()).into(),
+                serde_json::to_string(&snapshot)
+                    .unwrap_or_else(|_| "{}".into())
+                    .into(),
             ))
             .await;
     }
@@ -190,7 +204,9 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
             Ok(snapshot) => {
                 if socket
                     .send(Message::Text(
-                        serde_json::to_string(&snapshot).unwrap_or_else(|_| "{}".into()).into(),
+                        serde_json::to_string(&snapshot)
+                            .unwrap_or_else(|_| "{}".into())
+                            .into(),
                     ))
                     .await
                     .is_err()
@@ -207,7 +223,10 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
 }
 
 fn next_request_id() -> String {
-    format!("req-{}", REQUEST_SEQUENCE.fetch_add(1, Ordering::Relaxed) + 1)
+    format!(
+        "req-{}",
+        REQUEST_SEQUENCE.fetch_add(1, Ordering::Relaxed) + 1
+    )
 }
 
 fn json_response(
@@ -216,9 +235,9 @@ fn json_response(
     body: Value,
     path: Option<&str>,
     method: &str,
+    started: Instant,
     remote_addr: Option<&str>,
 ) -> Response {
-    let started = Instant::now();
     let mut headers = HeaderMap::new();
     headers.insert("access-control-allow-origin", "*".parse().unwrap());
     headers.insert("x-request-id", request_id.parse().unwrap());
@@ -231,7 +250,7 @@ fn json_response(
             "path": path.unwrap_or(""),
             "status": status.as_u16(),
             "latency_ms": started.elapsed().as_millis(),
-            "remote": remote_addr,
+            "remote_addr": remote_addr,
         }),
     );
 
@@ -244,9 +263,9 @@ fn text_response(
     body: String,
     path: Option<&str>,
     method: &str,
+    started: Instant,
     remote_addr: Option<&str>,
 ) -> Response {
-    let started = Instant::now();
     let mut headers = HeaderMap::new();
     headers.insert("access-control-allow-origin", "*".parse().unwrap());
     headers.insert("x-request-id", request_id.parse().unwrap());
@@ -263,7 +282,7 @@ fn text_response(
             "path": path.unwrap_or(""),
             "status": status.as_u16(),
             "latency_ms": started.elapsed().as_millis(),
-            "remote": remote_addr,
+            "remote_addr": remote_addr,
         }),
     );
 

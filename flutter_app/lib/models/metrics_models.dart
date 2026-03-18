@@ -1,12 +1,11 @@
-
-import 'package:flutter/foundation.dart';
-
 class CpuMetrics {
+  final String modelName;
   final double usagePercent;
   final int cores;
   final List<double> perCore;
 
   const CpuMetrics({
+    required this.modelName,
     required this.usagePercent,
     required this.cores,
     required this.perCore,
@@ -14,6 +13,7 @@ class CpuMetrics {
 
   factory CpuMetrics.fromJson(Map<String, dynamic> json) {
     return CpuMetrics(
+      modelName: (json['model_name'] as String?) ?? 'Unknown CPU',
       usagePercent: (json['usage_percent'] as num).toDouble(),
       cores: json['cores'] as int,
       perCore: List<double>.from(

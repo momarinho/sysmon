@@ -55,13 +55,13 @@ MetricsSnapshot _buildMockSnapshot() {
   return MetricsSnapshot(
     timestamp: now,
     cpu: CpuMetrics(
+      modelName: 'Demo CPU',
       usagePercent: cpu.clamp(0, 100).toDouble(),
       cores: 6,
       perCore: List<double>.generate(
         6,
-        (index) => (cpu + 8 * math.sin((phase + index) / 3))
-            .clamp(0, 100)
-            .toDouble(),
+        (index) =>
+            (cpu + 8 * math.sin((phase + index) / 3)).clamp(0, 100).toDouble(),
       ),
     ),
     memory: MemMetrics(
@@ -75,4 +75,3 @@ MetricsSnapshot _buildMockSnapshot() {
     ),
   );
 }
-

@@ -46,8 +46,8 @@ class MemoryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
+        color: isDark ? AppColors.surfaceDarkElevated : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
         ),
@@ -57,22 +57,25 @@ class MemoryCard extends StatelessWidget {
         children: [
           // Header
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Memory Allocation',
-                style: Theme.of(context).textTheme.headlineSmall,
+              Expanded(
+                child: Text(
+                  'Memory Allocation',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.0),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.memory,
-                  color: AppColors.primary,
-                  size: 20,
+                child: Icon(
+                  Icons.tune,
+                  color: isDark ? AppColors.textMutedLight : AppColors.primary,
+                  size: 18,
                 ),
               ),
             ],
@@ -94,6 +97,7 @@ class MemoryCard extends StatelessWidget {
                     _formatBytes(availableKb),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: AppColors.textLight,
                         ),
                   ),
                 ],
@@ -106,12 +110,13 @@ class MemoryCard extends StatelessWidget {
                   minHeight: 8,
                   backgroundColor:
                       isDark ? AppColors.borderDark : AppColors.borderLight,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.statusGreen),
+                  valueColor:
+                      const AlwaysStoppedAnimation(AppColors.statusGreen),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                '$availableKb KB available',
+                '${_formatBytes(availableKb)} available',
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ],
@@ -133,6 +138,7 @@ class MemoryCard extends StatelessWidget {
                     _formatBytes(usedKb),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: AppColors.textLight,
                         ),
                   ),
                 ],
@@ -145,12 +151,12 @@ class MemoryCard extends StatelessWidget {
                   minHeight: 8,
                   backgroundColor:
                       isDark ? AppColors.borderDark : AppColors.borderLight,
-                  valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                  valueColor: const AlwaysStoppedAnimation(AppColors.primary),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                'Total Capacity: ${_formatBytes(totalKb)}',
+                'Total capacity: ${_formatBytes(totalKb)}',
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ],

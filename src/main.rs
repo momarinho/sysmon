@@ -2,15 +2,15 @@ mod collectors;
 mod config;
 mod logging;
 mod models;
-mod server;
 mod prometheus;
+mod server;
 
 use std::sync::Arc;
 
 use axum::serve;
 use config::Config;
 use logging::{LogLevel, Logger};
-use server::{AppState, run_collector_loop, router};
+use server::{AppState, router, run_collector_loop};
 use tokio::net::TcpListener;
 use tokio::sync::{RwLock, broadcast};
 
@@ -24,11 +24,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = AppState::new(config.clone(), Arc::clone(&latest), tx.clone());
 
-    let collector_handle = tokio::spawn(run_collector_loop(
-        config.clone(),
-        Arc::clone(&latest),
-        tx,
-    ));
+    let collector_handle =
+        tokio::spawn(run_collector_loop(config.clone(), Arc::clone(&latest), tx));
 
     let listener = TcpListener::bind(("127.0.0.1", config.port)).await?;
 
@@ -65,4 +62,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-

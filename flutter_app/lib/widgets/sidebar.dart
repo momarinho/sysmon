@@ -31,7 +31,7 @@ class Sidebar extends StatelessWidget {
 
     return Container(
       width: 280,
-      color: isDark ? AppColors.surfaceDark : const Color(0xFFF9FAFB),
+      color: isDark ? AppColors.sidebarDark : const Color(0xFFF9FAFB),
       child: Column(
         children: [
           // Logo
@@ -89,14 +89,20 @@ class Sidebar extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
+                            horizontal: 14,
+                            vertical: 13,
                           ),
                           decoration: BoxDecoration(
                             color: item.isSelected
-                                ? AppColors.primary.withOpacity(0.1)
+                                ? AppColors.primary.withValues(alpha: 0.1)
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
+                            border: item.isSelected
+                                ? Border.all(
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.18),
+                                  )
+                                : null,
                           ),
                           child: Row(
                             children: [
@@ -151,7 +157,7 @@ class Sidebar extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Center(

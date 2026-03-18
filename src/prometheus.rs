@@ -88,6 +88,7 @@ mod tests {
         let snapshot = MetricsSnapshot {
             timestamp: Utc::now(),
             cpu: CpuMetrics {
+                model_name: "Test CPU".into(),
                 usage_percent: 45.5,
                 cores: 8,
                 per_core: vec![45.5; 8],
@@ -107,5 +108,7 @@ mod tests {
         let output = PrometheusFormatter::format(&snapshot);
         assert!(output.contains("sysmon_cpu_usage_percent"));
         assert!(output.contains("# TYPE sysmon_memory_total_bytes gauge"));
+        assert!(output.contains("sysmon_cpu_cores_total 8"));
+        assert!(output.contains("sysmon_memory_swap_total_bytes 102400"));
     }
 }

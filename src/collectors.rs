@@ -5,13 +5,17 @@ use crate::models::{CpuMetrics, MemMetrics, round_one_decimal};
 
 #[derive(Default)]
 pub struct CpuCollector {
+    model_name: String,
     prev_total: Option<Vec<u64>>,
     prev_idle: Option<Vec<u64>>,
 }
 
 impl CpuCollector {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            model_name: Self::read_model_name(),
+            ..Self::default()
+        }
     }
 
     pub fn collect(&mut self) -> CpuMetrics {
@@ -23,12 +27,36 @@ impl CpuCollector {
                     serde_json::json!({ "error": error.to_string() }),
                 );
                 CpuMetrics {
+                    model_name: self.model_name.clone(),
                     usage_percent: 0.0,
                     cores: 0,
                     per_core: Vec::new(),
                 }
             }
         }
+    }
+
+    fn read_model_name() -> String {
+        fs::read_to_string("/proc/cpuinfo")
+            .ok()
+            .and_then(|content| Self::parse_model_name(&content))
+            .unwrap_or_else(|| "Unknown CPU".to_owned())
+    }
+
+    fn parse_model_name(content: &str) -> Option<String> {
+        content.lines().find_map(|line| {
+            let (key, value) = line.split_once(':')?;
+            if key.trim() == "model name" {
+                let model = value.trim();
+                if model.is_empty() {
+                    None
+                } else {
+                    Some(model.to_owned())
+                }
+            } else {
+                None
+            }
+        })
     }
 
     fn parse(&mut self, content: &str) -> CpuMetrics {
@@ -78,6 +106,7 @@ impl CpuCollector {
         self.prev_idle = Some(idles);
 
         CpuMetrics {
+            model_name: self.model_name.clone(),
             usage_percent: overall_usage,
             cores: per_core.len(),
             per_core,
@@ -111,7 +140,10 @@ impl MemCollector {
         for line in content.lines() {
             let parts = line.split_whitespace().collect::<Vec<_>>();
             if parts.len() >= 2 {
-                mem.insert(parts[0].trim_end_matches(':'), parts[1].parse::<u64>().unwrap_or(0));
+                mem.insert(
+                    parts[0].trim_end_matches(':'),
+                    parts[1].parse::<u64>().unwrap_or(0),
+                );
             }
         }
 
@@ -146,15 +178,26 @@ mod tests {
     #[test]
     fn cpu_parser_uses_deltas() {
         let mut collector = CpuCollector::new();
+        collector.model_name = "Test CPU".into();
         let first = "cpu  10 0 10 80 0 0 0 0\ncpu0 5 0 5 40 0 0 0 0\ncpu1 5 0 5 40 0 0 0 0\n";
         let second = "cpu  20 0 20 100 0 0 0 0\ncpu0 10 0 10 50 0 0 0 0\ncpu1 10 0 10 50 0 0 0 0\n";
 
         let cold = collector.parse(first);
         let hot = collector.parse(second);
 
+        assert_eq!(hot.model_name, "Test CPU");
         assert_eq!(cold.usage_percent, 0.0);
         assert_eq!(hot.usage_percent, 50.0);
         assert_eq!(hot.cores, 2);
         assert_eq!(hot.per_core, vec![50.0, 50.0]);
+    }
+
+    #[test]
+    fn cpu_model_name_parser_reads_first_model_name() {
+        let content = "processor : 0\nmodel name : AMD Ryzen 7 7840HS\ncpu MHz : 3800.000\n";
+
+        let model_name = CpuCollector::parse_model_name(content);
+
+        assert_eq!(model_name.as_deref(), Some("AMD Ryzen 7 7840HS"));
     }
 }

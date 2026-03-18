@@ -1,17 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sysmon_dashboard/theme/app_colors.dart';
-
-class StatusIndicator {
-  final String label;
-  final IconData icon;
-  final Color color;
-
-  StatusIndicator({
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
-}
+import 'package:sysmon_dashboard/widgets/status_indicator.dart';
 
 class KPICard extends StatelessWidget {
   final String title;
@@ -32,18 +21,26 @@ class KPICard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
+        color: isDark ? AppColors.surfaceDarkElevated : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
         ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -52,31 +49,27 @@ class KPICard extends StatelessWidget {
                 style: Theme.of(context).textTheme.labelSmall,
               ),
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(
                   icon,
                   color: AppColors.primary,
-                  size: 20,
+                  size: 16,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Value
+          const SizedBox(height: 18),
           Text(
             value,
             style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontSize: 28,
+                  fontSize: 23,
                 ),
           ),
-          const SizedBox(height: 8),
-
-          // Indicator
+          const SizedBox(height: 10),
           if (indicator != null)
             Row(
               children: [
@@ -86,12 +79,16 @@ class KPICard extends StatelessWidget {
                   color: indicator!.color,
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  indicator!.label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: indicator!.color,
-                    fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Text(
+                    indicator!.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: indicator!.color,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],

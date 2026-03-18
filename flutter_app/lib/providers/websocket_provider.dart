@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -17,7 +18,7 @@ class WebSocketService {
       // Aguardar a conexão estabelecer
       await _channel!.ready;
     } catch (e) {
-      print('WebSocket connection error: $e');
+      debugPrint('WebSocket connection error: $e');
       _channel = null;
       rethrow;
     }
