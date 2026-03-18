@@ -49,7 +49,7 @@ class CPUChart extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
@@ -98,8 +98,8 @@ class CPUChart extends StatelessWidget {
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
                         color: isDark
-                            ? AppColors.borderDark.withValues(alpha: 0.3)
-                            : AppColors.borderLight.withValues(alpha: 0.3),
+                            ? AppColors.borderDark.withOpacity(0.3)
+                            : AppColors.borderLight.withOpacity(0.3),
                         strokeWidth: 0.5,
                       );
                     },
@@ -155,7 +155,7 @@ class CPUChart extends StatelessWidget {
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: AppColors.primary.withValues(alpha: 0.2),
+                        color: AppColors.primary.withOpacity(0.2),
                       ),
                     ),
                   ],

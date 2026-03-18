@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/legacy.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 const String _defaultWsUrl = String.fromEnvironment(

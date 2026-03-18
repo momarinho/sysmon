@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/legacy.dart';
 import 'package:sysmon_dashboard/models/metrics_models.dart';
 
 import 'metrics_provider.dart';
