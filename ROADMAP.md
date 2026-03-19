@@ -252,7 +252,7 @@ Objetivo: completar os coletores planejados e plugar disco, rede e servicos no o
 
 ### Checklist de saida
 
-- Obrigatorio: `/metrics` inclui `disk`, `net` e `services`
+- Obrigatorio: `/metrics` inclui `disk`, `network` e `services`
 - Obrigatorio: exporter Prometheus inclui novas metricas
 - Obrigatorio: frontend mostra as novas secoes sem regressao nas metricas atuais
 

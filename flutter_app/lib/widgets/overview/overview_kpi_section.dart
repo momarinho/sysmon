@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:sysmon_dashboard/theme/app_colors.dart';
 import 'package:sysmon_dashboard/widgets/kpi_card.dart';
 import 'package:sysmon_dashboard/widgets/status_indicator.dart';
 
 class OverviewKpiSection extends StatelessWidget {
   final String uptime;
   final String serverHealth;
-  final String healthLabel;
+  final StatusIndicator healthIndicator;
   final String networkIo;
-  final int activeProcesses;
-  final String lastUpdatedLabel;
+  final StatusIndicator networkIndicator;
+  final String activeProcesses;
+  final StatusIndicator uptimeIndicator;
+  final StatusIndicator activeProcessesIndicator;
 
   const OverviewKpiSection({
     super.key,
     required this.uptime,
     required this.serverHealth,
-    required this.healthLabel,
+    required this.healthIndicator,
     required this.networkIo,
+    required this.networkIndicator,
     required this.activeProcesses,
-    required this.lastUpdatedLabel,
+    required this.uptimeIndicator,
+    required this.activeProcessesIndicator,
   });
 
   @override
@@ -35,43 +38,23 @@ class OverviewKpiSection extends StatelessWidget {
           title: 'Uptime',
           value: '',
           icon: Icons.timer_outlined,
-        ).copyWithValue(
-            uptime,
-            const StatusIndicator(
-              label: 'Mock metric for layout',
-              icon: Icons.construction,
-              color: AppColors.statusGreen,
-            )),
+        ).copyWithValue(uptime, uptimeIndicator),
         KPICard(
           title: 'Server Health',
           value: serverHealth,
           icon: Icons.health_and_safety_outlined,
-          indicator: StatusIndicator(
-            label: healthLabel,
-            icon: Icons.check_circle_outline,
-            color: AppColors.statusGreen,
-          ),
+          indicator: healthIndicator,
         ),
         const KPICard(
           title: 'Network I/O',
           value: '',
           icon: Icons.swap_horiz,
-        ).copyWithValue(
-            networkIo,
-            const StatusIndicator(
-              label: 'Mock traffic baseline',
-              icon: Icons.analytics_outlined,
-              color: AppColors.statusOrange,
-            )),
+        ).copyWithValue(networkIo, networkIndicator),
         KPICard(
           title: 'Active Processes',
-          value: '$activeProcesses',
+          value: activeProcesses,
           icon: Icons.developer_board_outlined,
-          indicator: StatusIndicator(
-            label: lastUpdatedLabel,
-            icon: Icons.update,
-            color: AppColors.textMuted,
-          ),
+          indicator: activeProcessesIndicator,
         ),
       ],
     );

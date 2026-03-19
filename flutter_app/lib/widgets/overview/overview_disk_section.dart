@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:sysmon_dashboard/theme/app_colors.dart';
 
 class OverviewDiskSection extends StatelessWidget {
-  final String speedLabel;
+  final String writeSpeedLabel;
+  final String readSpeedLabel;
   final String deviceLabel;
+  final String usageLabel;
 
   const OverviewDiskSection({
     super.key,
-    required this.speedLabel,
+    required this.writeSpeedLabel,
+    required this.readSpeedLabel,
     required this.deviceLabel,
+    required this.usageLabel,
   });
 
   @override
@@ -42,11 +46,28 @@ class OverviewDiskSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            speedLabel,
+            writeSpeedLabel,
             style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   fontSize: 32,
                   color: Colors.white,
                 ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _DiskStatChip(
+                icon: Icons.download_rounded,
+                label: 'Read',
+                value: readSpeedLabel,
+              ),
+              _DiskStatChip(
+                icon: Icons.pie_chart_outline_rounded,
+                label: 'Usage',
+                value: usageLabel,
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           Row(
@@ -61,6 +82,44 @@ class OverviewDiskSection extends StatelessWidget {
                     ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiskStatChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _DiskStatChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.white70),
+          const SizedBox(width: 8),
+          Text(
+            '$label: $value',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ),

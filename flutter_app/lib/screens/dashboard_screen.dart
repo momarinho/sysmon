@@ -12,8 +12,10 @@ import 'package:sysmon_dashboard/widgets/overview/overview_customize_sheet.dart'
 import 'package:sysmon_dashboard/widgets/overview/overview_disk_section.dart';
 import 'package:sysmon_dashboard/widgets/overview/overview_kpi_section.dart';
 import 'package:sysmon_dashboard/widgets/overview/overview_memory_section.dart';
-import 'package:sysmon_dashboard/widgets/overview/overview_placeholder_section.dart';
+import 'package:sysmon_dashboard/widgets/overview/overview_network_section.dart';
+import 'package:sysmon_dashboard/widgets/overview/overview_services_section.dart';
 import 'package:sysmon_dashboard/widgets/sidebar.dart';
+import 'package:sysmon_dashboard/widgets/status_indicator.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -204,10 +206,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           return OverviewKpiSection(
             uptime: mockOverview.uptime,
             serverHealth: mockOverview.serverHealth,
-            healthLabel: mockOverview.healthLabel,
+            healthIndicator: mockOverview.healthIndicator,
             networkIo: mockOverview.networkIo,
             activeProcesses: mockOverview.activeProcesses,
-            lastUpdatedLabel: mockOverview.lastUpdatedLabel,
+            networkIndicator: mockOverview.networkIndicator,
+            uptimeIndicator: mockOverview.uptimeIndicator,
+            activeProcessesIndicator: mockOverview.activeProcessesIndicator,
           );
         case OverviewBlockId.cpu:
           return OverviewCpuSection(
@@ -227,21 +231,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             availableKb: snapshot.memory.availableKb,
           );
         case OverviewBlockId.disk:
+          final primaryFilesystem = snapshot.disk.filesystems.isNotEmpty
+              ? snapshot.disk.filesystems.first
+              : null;
           return OverviewDiskSection(
-            speedLabel: mockOverview.diskWriteSpeed,
-            deviceLabel: 'NVMe RAID 0 Array',
+            writeSpeedLabel: _formatBytesPerSecond(
+              snapshot.disk.bytesWrittenPerSec,
+            ),
+            readSpeedLabel: _formatBytesPerSecond(
+              snapshot.disk.bytesReadPerSec,
+            ),
+            usageLabel: '${snapshot.disk.usedPercent.toStringAsFixed(1)}%',
+            deviceLabel: primaryFilesystem?.device ?? 'System storage',
           );
         case OverviewBlockId.network:
-          return const OverviewPlaceholderSection(
-            title: 'Network',
-            description:
-                'Network metrics block reserved for phase 5 integration.',
+          return OverviewNetworkSection(
+            network: snapshot.network,
           );
         case OverviewBlockId.services:
-          return const OverviewPlaceholderSection(
-            title: 'Services',
-            description:
-                'Service status block reserved for phase 5 integration.',
+          return OverviewServicesSection(
+            services: snapshot.services,
           );
       }
     }).toList();
@@ -272,35 +281,63 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final uptimeDays = uptimeHours ~/ 24;
     final remainingHours = uptimeHours % 24;
     final remainingMinutes = (seconds ~/ 60) % 60;
-    final serverHealth = (99.4 -
-            (snapshot.memory.usedPercent / 1000) +
-            (snapshot.cpu.cores / 100))
-        .clamp(96.0, 99.9);
-    final networkGbps = ((snapshot.cpu.usagePercent * 0.018) +
-            (snapshot.memory.usedPercent * 0.01))
-        .clamp(0.4, 9.5);
+    final stalePenalty = lastUpdated.inSeconds > 5 ? 4.0 : 0.0;
+    final servicePenalty = snapshot.services.services
+            .where((service) => service.status != 'running')
+            .length *
+        0.8;
+    final serverHealth = (100.0 -
+            (snapshot.cpu.usagePercent * 0.05) -
+            (snapshot.memory.usedPercent * 0.03) -
+            (snapshot.disk.usedPercent * 0.02) -
+            stalePenalty -
+            servicePenalty)
+        .clamp(88.0, 100.0);
+    final totalNetworkIo =
+        snapshot.network.bytesRecv + snapshot.network.bytesSent;
     final activeProcesses = 120 + (snapshot.cpu.cores * 8) + (seconds % 18);
-    final diskWriteSpeed = ((usedMemoryKbFrom(snapshot) / 1024 / 1024) * 0.012 +
-            snapshot.cpu.usagePercent * 2.6)
-        .clamp(80.0, 980.0);
+
+    final healthIndicator = serverHealth >= 98.0
+        ? const StatusIndicator(
+            label: 'Realtime telemetry stable',
+            icon: Icons.check_circle_outline,
+            color: AppColors.statusGreen,
+          )
+        : lastUpdated.inSeconds > 5
+            ? const StatusIndicator(
+                label: 'Snapshot delay detected',
+                icon: Icons.schedule,
+                color: AppColors.statusOrange,
+              )
+            : const StatusIndicator(
+                label: 'Load elevated but healthy',
+                icon: Icons.monitor_heart_outlined,
+                color: AppColors.statusOrange,
+              );
 
     return _MockOverview(
       uptime:
           '${uptimeDays}d ${remainingHours.toString().padLeft(2, '0')}h ${remainingMinutes.toString().padLeft(2, '0')}m',
       serverHealth: '${serverHealth.toStringAsFixed(1)}%',
-      healthLabel:
-          serverHealth >= 98.0 ? 'Optimal performance' : 'Stable state',
-      networkIo: networkGbps >= 1
-          ? '${networkGbps.toStringAsFixed(1)} Gb/s'
-          : '${(networkGbps * 1000).toStringAsFixed(0)} Mb/s',
-      activeProcesses: activeProcesses,
-      diskWriteSpeed: '${diskWriteSpeed.toStringAsFixed(0)} MB/s',
-      lastUpdatedLabel: lastUpdatedLabel,
+      healthIndicator: healthIndicator,
+      networkIo: _formatBytesPerSecond(totalNetworkIo),
+      networkIndicator: StatusIndicator(
+        label: lastUpdatedLabel,
+        icon: Icons.podcasts_outlined,
+        color: AppColors.primary,
+      ),
+      activeProcesses: '$activeProcesses',
+      uptimeIndicator: const StatusIndicator(
+        label: 'Estimated locally for layout',
+        icon: Icons.construction,
+        color: AppColors.statusOrange,
+      ),
+      activeProcessesIndicator: StatusIndicator(
+        label: '$lastUpdatedLabel · estimated',
+        icon: Icons.analytics_outlined,
+        color: AppColors.textMuted,
+      ),
     );
-  }
-
-  int usedMemoryKbFrom(MetricsSnapshot snapshot) {
-    return snapshot.memory.totalKb - snapshot.memory.availableKb;
   }
 }
 
@@ -410,19 +447,36 @@ class _DashboardHeader extends StatelessWidget {
 class _MockOverview {
   final String uptime;
   final String serverHealth;
-  final String healthLabel;
+  final StatusIndicator healthIndicator;
   final String networkIo;
-  final int activeProcesses;
-  final String diskWriteSpeed;
-  final String lastUpdatedLabel;
+  final StatusIndicator networkIndicator;
+  final String activeProcesses;
+  final StatusIndicator uptimeIndicator;
+  final StatusIndicator activeProcessesIndicator;
 
   const _MockOverview({
     required this.uptime,
     required this.serverHealth,
-    required this.healthLabel,
+    required this.healthIndicator,
     required this.networkIo,
+    required this.networkIndicator,
     required this.activeProcesses,
-    required this.diskWriteSpeed,
-    required this.lastUpdatedLabel,
+    required this.uptimeIndicator,
+    required this.activeProcessesIndicator,
   });
+}
+
+String _formatBytesPerSecond(num bytesPerSecond) {
+  final value = bytesPerSecond.toDouble();
+  const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+  var scaled = value;
+  var unitIndex = 0;
+
+  while (scaled >= 1024 && unitIndex < units.length - 1) {
+    scaled /= 1024;
+    unitIndex++;
+  }
+
+  final fractionDigits = scaled >= 100 ? 0 : 1;
+  return '${scaled.toStringAsFixed(fractionDigits)} ${units[unitIndex]}';
 }

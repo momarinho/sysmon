@@ -301,3 +301,89 @@ fn text_response(
 
     (status, headers, body).into_response()
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::Utc;
+    use serde_json::json;
+
+    use super::*;
+    use crate::models::{
+        CpuMetrics, DiskMetrics, FilesystemInfo, InterfaceInfo, MemMetrics, NetMetrics,
+        ServiceInfo, ServiceMetrics,
+    };
+
+    fn sample_snapshot() -> MetricsSnapshot {
+        let mut disk = DiskMetrics::new(1_000, 400);
+        disk.add_filesystem(FilesystemInfo {
+            mount_point: "/".into(),
+            device: "/dev/sda1".into(),
+            total_bytes: 1_000,
+            used_bytes: 400,
+            used_percent: 40.0,
+        });
+        disk.bytes_read_per_sec = 12.5;
+        disk.bytes_written_per_sec = 8.5;
+
+        let mut network = NetMetrics::new();
+        network.bytes_recv = 1_024;
+        network.bytes_sent = 2_048;
+        network.packets_recv = 10;
+        network.packets_sent = 20;
+        network.errors_in = 1;
+        network.errors_out = 2;
+        network.dropped_in = 3;
+        network.dropped_out = 4;
+        network.add_interface(InterfaceInfo {
+            name: "eth0".into(),
+            bytes_recv: 1_024,
+            bytes_sent: 2_048,
+            status: "up".into(),
+        });
+
+        let mut services = ServiceMetrics::new();
+        services.add_service(ServiceInfo {
+            name: "postgresql".into(),
+            status: "running".into(),
+            memory_kb: 8_192,
+            cpu_percent: 1.5,
+            pid: 1234,
+        });
+
+        MetricsSnapshot {
+            timestamp: Utc::now(),
+            cpu: CpuMetrics {
+                model_name: "Test CPU".into(),
+                usage_percent: 42.0,
+                cores: 8,
+                per_core: vec![42.0; 8],
+            },
+            memory: MemMetrics::new(1_000, 200, 600, 100, 300, 200, 50),
+            disk,
+            network,
+            services,
+        }
+    }
+
+    #[test]
+    fn metrics_json_contract_includes_disk_network_and_services() {
+        let payload = serde_json::to_value(sample_snapshot()).unwrap();
+
+        assert_eq!(payload["disk"]["bytes_read_per_sec"], json!(12.5));
+        assert_eq!(payload["network"]["bytes_recv"], json!(1_024));
+        assert_eq!(payload["services"]["services"][0]["name"], json!("postgresql"));
+        assert!(payload.get("net").is_none());
+    }
+
+    #[test]
+    fn websocket_payload_matches_json_contract() {
+        let snapshot = sample_snapshot();
+        let json_payload = serde_json::to_value(&snapshot).unwrap();
+        let ws_payload: serde_json::Value = serde_json::from_str(
+            &serde_json::to_string(&snapshot).unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(ws_payload, json_payload);
+    }
+}

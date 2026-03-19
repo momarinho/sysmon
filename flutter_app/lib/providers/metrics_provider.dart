@@ -73,5 +73,51 @@ MetricsSnapshot _buildMockSnapshot() {
       swapFreeKb: 1400 * 1024,
       buffersKb: 120 * 1024,
     ),
+    disk: const DiskMetrics(
+      totalBytes: 1 * 1024 * 1024 * 1024 * 1024,
+      usedBytes: 420 * 1024 * 1024 * 1024,
+      availableBytes: 604 * 1024 * 1024 * 1024,
+      usedPercent: 41.0,
+      filesystems: [
+        FilesystemInfo(
+          mountPoint: '/',
+          device: '/dev/nvme0n1p2',
+          totalBytes: 1 * 1024 * 1024 * 1024 * 1024,
+          usedBytes: 420 * 1024 * 1024 * 1024,
+          usedPercent: 41.0,
+        ),
+      ],
+      bytesReadPerSec: 12.5 * 1024 * 1024,
+      bytesWrittenPerSec: 8.5 * 1024 * 1024,
+    ),
+    network: const NetworkMetrics(
+      bytesRecv: 1024 * 1024,
+      bytesSent: 512 * 1024,
+      packetsRecv: 1200,
+      packetsSent: 900,
+      errorsIn: 0,
+      errorsOut: 0,
+      droppedIn: 0,
+      droppedOut: 0,
+      interfaces: [
+        NetworkInterfaceInfo(
+          name: 'eth0',
+          bytesRecv: 1024 * 1024,
+          bytesSent: 512 * 1024,
+          status: 'up',
+        ),
+      ],
+    ),
+    services: const ServiceMetrics(
+      services: [
+        ServiceInfo(
+          name: 'postgresql',
+          status: 'running',
+          memoryKb: 8192,
+          cpuPercent: 1.5,
+          pid: 1234,
+        ),
+      ],
+    ),
   );
 }
