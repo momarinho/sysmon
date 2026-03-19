@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysmon_dashboard/models/metrics_models.dart';
+import 'package:sysmon_dashboard/models/overview_layout.dart';
 import 'package:sysmon_dashboard/providers/history_provider.dart';
 import 'package:sysmon_dashboard/providers/metrics_provider.dart';
+import 'package:sysmon_dashboard/providers/overview_layout_provider.dart';
 import 'package:sysmon_dashboard/providers/websocket_provider.dart';
 import 'package:sysmon_dashboard/theme/app_colors.dart';
-import 'package:sysmon_dashboard/widgets/cpu_chart.dart';
-import 'package:sysmon_dashboard/widgets/kpi_card.dart';
-import 'package:sysmon_dashboard/widgets/memory_card.dart';
+import 'package:sysmon_dashboard/widgets/overview/overview_cpu_section.dart';
+import 'package:sysmon_dashboard/widgets/overview/overview_customize_sheet.dart';
+import 'package:sysmon_dashboard/widgets/overview/overview_disk_section.dart';
+import 'package:sysmon_dashboard/widgets/overview/overview_kpi_section.dart';
+import 'package:sysmon_dashboard/widgets/overview/overview_memory_section.dart';
+import 'package:sysmon_dashboard/widgets/overview/overview_placeholder_section.dart';
 import 'package:sysmon_dashboard/widgets/sidebar.dart';
-import 'package:sysmon_dashboard/widgets/status_indicator.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -32,7 +36,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Scaffold(
       body: Row(
         children: [
-          // Sidebar
           Sidebar(
             items: [
               SidebarItem(
@@ -62,106 +65,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ],
             onLogout: () {},
           ),
-
-          // Main Content
           Expanded(
             child: Column(
               children: [
-                // Header
-                Container(
-                  height: 72,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? AppColors.borderDark
-                            : AppColors.borderLight,
-                      ),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Row(
-                      children: [
-                        Text(
-                          'System Monitoring',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const SizedBox(width: 16),
-                        Container(
-                          width: 1,
-                          height: 24,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? AppColors.borderDark
-                              : AppColors.borderLight,
-                        ),
-                        const SizedBox(width: 16),
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: isLive
-                                    ? AppColors.statusGreen
-                                    : AppColors.statusOrange,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              isLive ? 'SYSTEM LIVE' : 'OFFLINE MODE',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: isLive
-                                    ? AppColors.statusGreen
-                                    : AppColors.statusOrange,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        if (showSearch) ...[
-                          SizedBox(
-                            width: 300,
-                            height: 40,
-                            child: TextField(
-                              decoration: InputDecoration(
-                                hintText: 'Search processes...',
-                                prefixIcon: const Icon(Icons.search, size: 18),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(horizontal: 12),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                        ],
-                        IconButton(
-                          icon: const Icon(Icons.refresh),
-                          onPressed: () {
-                            ref.read(webSocketProvider.notifier).reconnect();
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.more_vert),
-                          onPressed: () {},
-                        ),
-                      ],
-                    ),
-                  ),
+                _DashboardHeader(
+                  isLive: isLive,
+                  showSearch: showSearch,
+                  onReconnect: () {
+                    ref.read(webSocketProvider.notifier).reconnect();
+                  },
+                  onCustomize: () {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (_) => const OverviewCustomizeSheet(),
+                    );
+                  },
                 ),
-
-                // Content
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(32),
@@ -207,108 +127,147 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildDashboard(MetricsSnapshot snapshot, MetricsHistory history) {
-    final swapUsedKb = snapshot.memory.swapTotalKb - snapshot.memory.swapFreeKb;
-    final lastUpdated = DateTime.now().difference(snapshot.timestamp);
-    final lastUpdatedLabel = lastUpdated.inSeconds <= 1
-        ? 'Updated just now'
-        : 'Updated ${lastUpdated.inSeconds}s ago';
+    final layout = ref.watch(overviewLayoutProvider);
     final mockOverview = _buildMockOverview(snapshot);
+    final topBlocks = visibleBlocksForZone(layout, OverviewZone.top);
+    final mainBlocks = visibleBlocksForZone(layout, OverviewZone.main);
+    final sideBlocks = visibleBlocksForZone(layout, OverviewZone.side);
+    final bottomBlocks = visibleBlocksForZone(layout, OverviewZone.bottom);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GridView.count(
-          crossAxisCount: 4,
-          crossAxisSpacing: 18,
-          mainAxisSpacing: 18,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.38,
-          children: [
-            KPICard(
-              title: 'Uptime',
-              value: mockOverview.uptime,
-              icon: Icons.timer_outlined,
-              indicator: const StatusIndicator(
-                label: 'Mock metric for layout',
-                icon: Icons.construction,
-                color: AppColors.statusGreen,
-              ),
-            ),
-            KPICard(
-              title: 'Server Health',
-              value: mockOverview.serverHealth,
-              icon: Icons.health_and_safety_outlined,
-              indicator: StatusIndicator(
-                label: mockOverview.healthLabel,
-                icon: Icons.check_circle_outline,
-                color: AppColors.statusGreen,
-              ),
-            ),
-            KPICard(
-              title: 'Network I/O',
-              value: mockOverview.networkIo,
-              icon: Icons.swap_horiz,
-              indicator: const StatusIndicator(
-                label: 'Mock traffic baseline',
-                icon: Icons.analytics_outlined,
-                color: AppColors.statusOrange,
-              ),
-            ),
-            KPICard(
-              title: 'Active Processes',
-              value: '${mockOverview.activeProcesses}',
-              icon: Icons.developer_board_outlined,
-              indicator: StatusIndicator(
-                label: lastUpdatedLabel,
-                icon: Icons.update,
-                color: AppColors.textMuted,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 22),
+        if (topBlocks.isNotEmpty) ...[
+          ..._buildZoneBlocks(
+            topBlocks,
+            snapshot,
+            history,
+            mockOverview,
+          ),
+          const SizedBox(height: 22),
+        ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               flex: 2,
-              child: CPUChart(
-                data: history.cpuHistory,
-                currentValue: snapshot.cpu.usagePercent,
-                modelName: snapshot.cpu.modelName,
-                cores: snapshot.cpu.cores,
-              ),
-            ),
-            const SizedBox(width: 18),
-            Expanded(
               child: Column(
-                children: [
-                  MemoryCard(
-                    totalKb: snapshot.memory.totalKb,
-                    usedKb:
-                        snapshot.memory.totalKb - snapshot.memory.availableKb,
-                    cachedKb: snapshot.memory.cachedKb,
-                    swapUsedKb: swapUsedKb,
-                    swapTotalKb: snapshot.memory.swapTotalKb,
-                    availableKb: snapshot.memory.availableKb,
-                  ),
-                  const SizedBox(height: 18),
-                  _DiskSpeedCard(
-                    speedLabel: mockOverview.diskWriteSpeed,
-                    deviceLabel: 'NVMe RAID 0 Array',
-                  ),
-                ],
+                children: _buildZoneBlocks(
+                  mainBlocks,
+                  snapshot,
+                  history,
+                  mockOverview,
+                ),
               ),
             ),
+            if (sideBlocks.isNotEmpty) ...[
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  children: _withSpacing(
+                    _buildZoneBlocks(
+                      sideBlocks,
+                      snapshot,
+                      history,
+                      mockOverview,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
+        if (bottomBlocks.isNotEmpty) ...[
+          const SizedBox(height: 22),
+          ..._withSpacing(
+            _buildZoneBlocks(
+              bottomBlocks,
+              snapshot,
+              history,
+              mockOverview,
+            ),
+          ),
+        ],
       ],
     );
   }
 
+  List<Widget> _buildZoneBlocks(
+    List<OverviewBlockConfig> blocks,
+    MetricsSnapshot snapshot,
+    MetricsHistory history,
+    _MockOverview mockOverview,
+  ) {
+    return blocks.map((block) {
+      switch (block.id) {
+        case OverviewBlockId.kpis:
+          return OverviewKpiSection(
+            uptime: mockOverview.uptime,
+            serverHealth: mockOverview.serverHealth,
+            healthLabel: mockOverview.healthLabel,
+            networkIo: mockOverview.networkIo,
+            activeProcesses: mockOverview.activeProcesses,
+            lastUpdatedLabel: mockOverview.lastUpdatedLabel,
+          );
+        case OverviewBlockId.cpu:
+          return OverviewCpuSection(
+            data: history.cpuHistory,
+            currentValue: snapshot.cpu.usagePercent,
+            modelName: snapshot.cpu.modelName,
+            cores: snapshot.cpu.cores,
+          );
+        case OverviewBlockId.memory:
+          return OverviewMemorySection(
+            totalKb: snapshot.memory.totalKb,
+            usedKb: snapshot.memory.totalKb - snapshot.memory.availableKb,
+            cachedKb: snapshot.memory.cachedKb,
+            swapUsedKb:
+                snapshot.memory.swapTotalKb - snapshot.memory.swapFreeKb,
+            swapTotalKb: snapshot.memory.swapTotalKb,
+            availableKb: snapshot.memory.availableKb,
+          );
+        case OverviewBlockId.disk:
+          return OverviewDiskSection(
+            speedLabel: mockOverview.diskWriteSpeed,
+            deviceLabel: 'NVMe RAID 0 Array',
+          );
+        case OverviewBlockId.network:
+          return const OverviewPlaceholderSection(
+            title: 'Network',
+            description:
+                'Network metrics block reserved for phase 5 integration.',
+          );
+        case OverviewBlockId.services:
+          return const OverviewPlaceholderSection(
+            title: 'Services',
+            description:
+                'Service status block reserved for phase 5 integration.',
+          );
+      }
+    }).toList();
+  }
+
+  List<Widget> _withSpacing(List<Widget> children) {
+    if (children.isEmpty) {
+      return const [];
+    }
+
+    final result = <Widget>[];
+    for (var index = 0; index < children.length; index++) {
+      if (index > 0) {
+        result.add(const SizedBox(height: 18));
+      }
+      result.add(children[index]);
+    }
+    return result;
+  }
+
   _MockOverview _buildMockOverview(MetricsSnapshot snapshot) {
     final seconds = snapshot.timestamp.millisecondsSinceEpoch ~/ 1000;
+    final lastUpdated = DateTime.now().difference(snapshot.timestamp);
+    final lastUpdatedLabel = lastUpdated.inSeconds <= 1
+        ? 'Updated just now'
+        : 'Updated ${lastUpdated.inSeconds}s ago';
     final uptimeHours = 240 + (seconds % 96);
     final uptimeDays = uptimeHours ~/ 24;
     final remainingHours = uptimeHours % 24;
@@ -336,11 +295,115 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           : '${(networkGbps * 1000).toStringAsFixed(0)} Mb/s',
       activeProcesses: activeProcesses,
       diskWriteSpeed: '${diskWriteSpeed.toStringAsFixed(0)} MB/s',
+      lastUpdatedLabel: lastUpdatedLabel,
     );
   }
 
   int usedMemoryKbFrom(MetricsSnapshot snapshot) {
     return snapshot.memory.totalKb - snapshot.memory.availableKb;
+  }
+}
+
+class _DashboardHeader extends StatelessWidget {
+  final bool isLive;
+  final bool showSearch;
+  final VoidCallback onReconnect;
+  final VoidCallback onCustomize;
+
+  const _DashboardHeader({
+    required this.isLive,
+    required this.showSearch,
+    required this.onReconnect,
+    required this.onCustomize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 72,
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.borderDark
+                : AppColors.borderLight,
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Row(
+          children: [
+            Text(
+              'System Monitoring',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(width: 16),
+            Container(
+              width: 1,
+              height: 24,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.borderDark
+                  : AppColors.borderLight,
+            ),
+            const SizedBox(width: 16),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color:
+                        isLive ? AppColors.statusGreen : AppColors.statusOrange,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  isLive ? 'SYSTEM LIVE' : 'OFFLINE MODE',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color:
+                        isLive ? AppColors.statusGreen : AppColors.statusOrange,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            if (showSearch) ...[
+              SizedBox(
+                width: 300,
+                height: 40,
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search processes...',
+                    prefixIcon: const Icon(Icons.search, size: 18),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+            ],
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: onReconnect,
+            ),
+            IconButton(
+              icon: const Icon(Icons.tune),
+              onPressed: onCustomize,
+              tooltip: 'Customize overview',
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -351,6 +414,7 @@ class _MockOverview {
   final String networkIo;
   final int activeProcesses;
   final String diskWriteSpeed;
+  final String lastUpdatedLabel;
 
   const _MockOverview({
     required this.uptime,
@@ -359,71 +423,6 @@ class _MockOverview {
     required this.networkIo,
     required this.activeProcesses,
     required this.diskWriteSpeed,
+    required this.lastUpdatedLabel,
   });
-}
-
-class _DiskSpeedCard extends StatelessWidget {
-  final String speedLabel;
-  final String deviceLabel;
-
-  const _DiskSpeedCard({
-    required this.speedLabel,
-    required this.deviceLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryDark, AppColors.primaryLight],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.25),
-            blurRadius: 28,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'DISK WRITE SPEED',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.white70,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            speedLabel,
-            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontSize: 32,
-                  color: Colors.white,
-                ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Icon(Icons.storage_rounded,
-                  color: Colors.white70, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                deviceLabel,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.white70,
-                    ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }

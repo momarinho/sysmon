@@ -22,16 +22,22 @@ Ja concluido:
 - loop de coleta periodica
 - `GET /health`
 - `GET /metrics`
+- `GET /metrics/prometheus`
 - `GET /ws`
 - frontend Flutter desktop consumindo o stream
+- CI com backend Rust e frontend Flutter
+- CLI com `status`, `show-config`, `metrics` e `health`
+- overview atual consolidado com CPU e memoria reais
 
 Pendente imediato:
 
-- `GET /metrics/prometheus`
-- alinhamento final da documentacao
-- pipeline de CI para backend Rust e frontend Flutter
+- evoluir o overview para composicao personalizavel
+- substituir KPIs mock por metricas reais progressivamente
+- iniciar a expansao de disco, rede e servicos no backend
 
 ## Fase 1 - Backend Rust Core
+
+Status: concluida
 
 Objetivo: manter uma base pequena, correta e facil de expandir sem reescrever o servidor.
 
@@ -78,6 +84,8 @@ Objetivo: manter uma base pequena, correta e facil de expandir sem reescrever o 
 
 ## Fase 2 - Observabilidade e Paridade de Endpoints
 
+Status: concluida
+
 Objetivo: fechar a paridade minima do backend e estabilizar o contrato consumido pelo frontend.
 
 ### Servidor
@@ -121,13 +129,15 @@ Objetivo: fechar a paridade minima do backend e estabilizar o contrato consumido
 
 ## Fase 3 - Frontend e CI
 
+Status: concluida
+
 Objetivo: consolidar o dashboard e automatizar validacao do projeto inteiro.
 
 ### Frontend Flutter
 
 - Obrigatorio: app Linux desktop funcional
 - Obrigatorio: conexao com `ws://localhost:8080/ws`
-- Obrigatorio: KPI cards para metricas reais
+- Obrigatorio: KPI cards para metricas reais ou mock explicito enquanto a coleta ainda nao existir
 - Obrigatorio: grafico de CPU em tempo real
 - Obrigatorio: card de memoria com dados reais
 
@@ -155,6 +165,8 @@ Objetivo: consolidar o dashboard e automatizar validacao do projeto inteiro.
 
 ## Fase 3.5 - CLI (Interface de Linha de Comando)
 
+Status: concluida
+
 Objetivo: fornecer ferramenta de linha de comando para gerenciar e consultar o daemon do backend.
 
 ### Comandos Basicos
@@ -178,9 +190,46 @@ Objetivo: fornecer ferramenta de linha de comando para gerenciar e consultar o d
 - Obrigatorio: tratamento de erro quando servidor nao esta disponivel
 - Recomendado: help message completo em `sysmon --help`
 
-## Fase 4 - Expansao de Metricas
+## Fase 4 - Overview Personalizavel
 
-Objetivo: completar os coletores planejados e ampliar o modelo de snapshot sem quebrar o frontend atual.
+Objetivo: preservar o visual atual do dashboard, mas permitir evolucao incremental do overview sem redesenhar a tela a cada nova metrica.
+
+### Estrutura de layout
+
+- Obrigatorio: definir blocos estaveis de overview
+  - `cpu`
+  - `memory`
+  - `disk`
+  - `network`
+  - `services`
+  - `kpis`
+- Obrigatorio: renderizar o overview a partir de configuracao local
+- Obrigatorio: permitir mostrar ou ocultar blocos
+- Obrigatorio: permitir reordenar blocos principais sem quebrar o layout desktop atual
+
+### Personalizacao
+
+- Obrigatorio: manter um layout padrao pronto para uso
+- Obrigatorio: permitir salvar a configuracao local do overview
+- Recomendado: permitir escolher quais KPIs aparecem no topo
+- Adiavel: drag-and-drop completo
+- Adiavel: multiplos layouts salvos
+
+### Compatibilidade
+
+- Obrigatorio: CPU e memoria continuam funcionando como hoje
+- Obrigatorio: blocos ainda nao suportados por metrica real podem usar mock explicito
+- Recomendado: evitar mudancas disruptivas no visual principal de overview
+
+### Checklist de saida
+
+- Obrigatorio: overview pode ser montado por configuracao
+- Obrigatorio: usuario consegue ocultar e reordenar blocos principais
+- Obrigatorio: visual atual permanece como preset padrao
+
+## Fase 5 - Expansao de Metricas
+
+Objetivo: completar os coletores planejados e plugar disco, rede e servicos no overview personalizavel sem retrabalho visual.
 
 ### Coletores restantes
 
@@ -196,7 +245,9 @@ Objetivo: completar os coletores planejados e ampliar o modelo de snapshot sem q
 
 ### Frontend
 
-- Obrigatorio: widgets para disco, rede e status de servicos
+- Obrigatorio: transformar `Disk Write Speed` em card real
+- Obrigatorio: widgets para rede e status de servicos
+- Obrigatorio: substituir mocks do topo por metricas reais quando houver fonte confiavel
 - Adiavel: tela de alertas enquanto o backend ainda nao emitir alertas
 
 ### Checklist de saida
@@ -205,7 +256,7 @@ Objetivo: completar os coletores planejados e ampliar o modelo de snapshot sem q
 - Obrigatorio: exporter Prometheus inclui novas metricas
 - Obrigatorio: frontend mostra as novas secoes sem regressao nas metricas atuais
 
-## Fase 5 - Operacao e Empacotamento
+## Fase 6 - Operacao e Empacotamento
 
 Objetivo: preparar o projeto para execucao continua fora do ambiente de desenvolvimento.
 
