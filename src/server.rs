@@ -13,9 +13,9 @@ use serde_json::{Value, json};
 use tokio::sync::{RwLock, broadcast};
 
 use crate::collectors::{CpuCollector, MemCollector};
+use crate::models::{MetricsSnapshot, DiskMetrics, NetMetrics, ServiceMetrics};
 use crate::config::Config;
 use crate::logging::{Logger, empty};
-use crate::models::MetricsSnapshot;
 use crate::prometheus::PrometheusFormatter;
 
 static REQUEST_SEQUENCE: AtomicU64 = AtomicU64::new(0);
@@ -69,6 +69,9 @@ pub async fn run_collector_loop(
             timestamp: Utc::now(),
             cpu: cpu.collect(),
             memory: mem.collect(),
+            disk: DiskMetrics::new(0, 0),
+            network: NetMetrics::new(),
+            services: ServiceMetrics::new(),
         };
 
         {

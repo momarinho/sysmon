@@ -81,7 +81,7 @@ mod tests {
     use chrono::Utc;
 
     use super::*;
-    use crate::models::{CpuMetrics, MemMetrics};
+    use crate::models::{CpuMetrics, MemMetrics, DiskMetrics, NetMetrics, ServiceMetrics};
 
     #[test]
     fn test_formatter() {
@@ -103,6 +103,9 @@ mod tests {
                 buffers_kb: 25,
                 used_percent: 50.0,
             },
+            disk: DiskMetrics::new(0, 0),
+            network: NetMetrics::new(),
+            services: ServiceMetrics::new(),
         };
 
         let output = PrometheusFormatter::format(&snapshot);
