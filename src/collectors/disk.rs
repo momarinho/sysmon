@@ -104,14 +104,26 @@ fn parse_diskstats_line(line: &str) -> Option<(String, u32, DeviceStats)> {
 }
 
 fn is_relevant_device(device_name: &str, major: u32) -> bool {
-    if major != 8 && major != 260 {
+    // Aceitar SCSI (8) e NVMe (259)
+    if major != 8 && major != 259 {
         return false;
     }
 
-    if device_name.contains('p') && device_name.chars().last().map_or(false, |c| c.is_numeric()) {
+    // Rejeitar partições SCSI: sda1, sdb2, etc (últimos chars são números)
+    if major == 8 && device_name.chars().last().map_or(false, |c| c.is_numeric()) {
         return false;
     }
 
+    // Rejeitar partições NVMe: nvme0n1p1, etc (contém 'p' seguido de números)
+    if major == 259 {
+        if let Some(p_index) = device_name.rfind('p') {
+            if device_name[p_index + 1..].chars().all(|c| c.is_numeric()) {
+                return false;
+            }
+        }
+    }
+
+    // Rejeitar pseudo-dispositivos
     if device_name.starts_with("loop")
         || device_name.starts_with("zram")
         || device_name.starts_with("dm-")

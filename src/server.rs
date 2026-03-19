@@ -12,9 +12,11 @@ use chrono::Utc;
 use serde_json::{Value, json};
 use tokio::sync::{RwLock, broadcast};
 
-use crate::collectors::{CpuCollector, MemCollector};
-use crate::models::{MetricsSnapshot, DiskMetrics, NetMetrics, ServiceMetrics};
+use crate::collectors::{
+    CpuCollector, DiskCollector, MemCollector, NetCollector, ServiceCollector
+};
 use crate::config::Config;
+use crate::models::MetricsSnapshot;
 use crate::logging::{Logger, empty};
 use crate::prometheus::PrometheusFormatter;
 
@@ -58,6 +60,9 @@ pub async fn run_collector_loop(
     let log = Logger::new("CollectorLoop");
     let mut cpu = CpuCollector::new();
     let mem = MemCollector::new();
+    let mut disk = DiskCollector::new();
+    let mut network = NetCollector::new();
+    let services = ServiceCollector::new(config.services.clone());
 
     log.info(
         "Starting collection",
@@ -69,9 +74,9 @@ pub async fn run_collector_loop(
             timestamp: Utc::now(),
             cpu: cpu.collect(),
             memory: mem.collect(),
-            disk: DiskMetrics::new(0, 0),
-            network: NetMetrics::new(),
-            services: ServiceMetrics::new(),
+            disk: disk.collect(),
+            network: network.collect(),
+            services: services.collect(),
         };
 
         {
@@ -85,6 +90,11 @@ pub async fn run_collector_loop(
             json!({
                 "cpu_pct": snapshot.cpu.usage_percent,
                 "mem_pct": snapshot.memory.used_percent,
+                "disk_read_bps": snapshot.disk.bytes_read_per_sec,
+                "disk_write_bps": snapshot.disk.bytes_written_per_sec,
+                "net_recv_bps": snapshot.network.bytes_recv,
+                "net_sent_bps": snapshot.network.bytes_sent,
+                "services_count": snapshot.services.services.len(),
             }),
         );
 
