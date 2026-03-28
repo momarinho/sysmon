@@ -4,7 +4,11 @@
       "Bash(cd frontend:*)",
       "Bash(cd:*)",
       "Bash(chmod:*)",
-      "Bash(grep -E '\\\\.\\(dart|yaml|yml\\)$')"
+      "Bash(grep -E '\\\\.\\(dart|yaml|yml\\)$')",
+      "Bash(pip freeze:*)",
+      "Bash(echo:*)",
+      "Bash(flutter pub:*)",
+      "Bash(flutter clean:*)"
     ]
   }
 }

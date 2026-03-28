@@ -22,7 +22,7 @@ class MetricCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFAF7F0),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black..withValues(alpha:0.06), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -37,7 +37,7 @@ class MetricCard extends StatelessWidget {
                   sectionsSpace: 0,
                   sections: [
                     PieChartSectionData(value: percent,       color: color,                   radius: 10, showTitle: false),
-                    PieChartSectionData(value: 100 - percent, color: color.withOpacity(0.15), radius: 10, showTitle: false),
+                    PieChartSectionData(value: 100 - percent, color: color..withValues(alpha:0.15), radius: 10, showTitle: false),
                   ],
                 )),
                 Text("${percent.toInt()}%",

@@ -14,9 +14,9 @@ class _CpuRamChartState extends State<CpuRamChart> {
   double _tick = 0;
 
   static const _maxPoints = 60;
-  static const _teal   = Color(0xFF4DB6AC);
-  static const _amber  = Color(0xFFB5A642);
-  static const _bg     = Color(0xFFFAF7F0);
+  static const _teal   = Color(0xFF00D4AA);
+  static const _blue  = Color(0xFF3B82F6);
+  static const _bg     = Color(0xFF1E1E1E);
 
   @override
   void initState() {
@@ -41,7 +41,7 @@ class _CpuRamChartState extends State<CpuRamChart> {
     isCurved: true,
     barWidth: 2,
     dotData: const FlDotData(show: false),
-    belowBarData: BarAreaData(show: true, color: c.withOpacity(0.15)),
+    belowBarData: BarAreaData(show: true, color: c..withValues(alpha:0.15)),
   );
 
   @override
@@ -49,48 +49,67 @@ class _CpuRamChartState extends State<CpuRamChart> {
     return Container(
       decoration: BoxDecoration(
         color: _bg,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4))],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey..withValues(alpha:0.1)),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            _legend(_teal,  "CPU"),
-            const SizedBox(width: 16),
-            _legend(_amber, "RAM"),
-          ]),
-          const SizedBox(height: 12),
+          Row(
+            children: [
+              _legend(_teal, "CPU"),
+              const SizedBox(width: 20),
+              _legend(_blue, "RAM"),
+            ],
+          ),
+          const SizedBox(height: 20),
           SizedBox(
-            height: 160,
+            height: 200,
             child: _cpuPoints.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : LineChart(LineChartData(
-                  minY: 0, maxY: 100,
-                  gridData: FlGridData(
-                    show: true,
-                    getDrawingHorizontalLine: (_) => FlLine(
-                      color: Colors.brown.withOpacity(0.1), strokeWidth: 1,
-                    ),
-                    drawVerticalLine: false,
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D4AA)),
                   ),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true, reservedSize: 32,
-                        getTitlesWidget: (v, _) => Text("${v.toInt()}%",
-                          style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                        interval: 25,
+                )
+              : LineChart(
+                  LineChartData(
+                    minY: 0,
+                    maxY: 100,
+                    gridData: FlGridData(
+                      show: true,
+                      getDrawingHorizontalLine: (_) => FlLine(
+                        color: Colors.grey..withValues(alpha:0.1),
+                        strokeWidth: 1,
                       ),
+                      drawVerticalLine: false,
                     ),
-                    bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles:    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles:  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    titlesData: FlTitlesData(
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (v, _) => Text(
+                            "${v.toInt()}%",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white54,
+                            ),
+                          ),
+                          interval: 20,
+                        ),
+                      ),
+                      bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    lineBarsData: [
+                      _bar(_cpuPoints, _teal),
+                      _bar(_ramPoints, _blue),
+                    ],
                   ),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [_bar(_cpuPoints, _teal), _bar(_ramPoints, _amber)],
-                )),
+                ),
           ),
         ],
       ),
@@ -98,9 +117,24 @@ class _CpuRamChartState extends State<CpuRamChart> {
   }
 
   Widget _legend(Color c, String label) => Row(children: [
-    Container(width: 12, height: 12, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
-    const SizedBox(width: 4),
-    Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF5C4A1E))),
+    Container(
+      width: 12,
+      height: 12,
+      decoration: BoxDecoration(
+        color: c,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white..withValues(alpha:0.3)),
+      ),
+    ),
+    const SizedBox(width: 8),
+    Text(
+      label,
+      style: TextStyle(
+        fontSize: 14,
+        color: Colors.white54,
+        fontWeight: FontWeight.w500,
+      ),
+    ),
   ]);
 
   @override
